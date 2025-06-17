@@ -9,6 +9,7 @@ export default function PlakalarPage() {
   const [filters, setFilters] = useState({
     name: '',
     profile: '',
+    grade: '',
     length: '',
     qty: '',
     weight: ''
@@ -25,6 +26,7 @@ export default function PlakalarPage() {
       .filter((part) => {
         if (filters.name && !part.part.toLowerCase().includes(filters.name.toLowerCase())) return false;
         if (filters.profile && !part.profile?.toLowerCase().includes(filters.profile.toLowerCase())) return false;
+        if (filters.grade && !part.grade?.toLowerCase().includes(filters.grade.toLowerCase())) return false;
         if (filters.length && !part.length_mm?.includes(filters.length)) return false;
         if (filters.qty && !part.qty.includes(filters.qty)) return false;
         if (filters.weight && !part.weight_kg.includes(filters.weight)) return false;
