@@ -23,17 +23,18 @@ export default function RegisterPage() {
     setError("");
 
     try {
-      const { registerKey, email, password, ...rest } = formData;
+      const { registerKey, email, password, firstName, lastName } = formData;
       const userData = {
-        ...rest,
+        firstName,
+        lastName,
         isAdmin: false,
         createdAt: new Date()
       };
       const result = await handleRegister(
         email,
         password,
-        userData,
-        registerKey
+        firstName,
+        lastName
       );
 
       if (result.success) {
