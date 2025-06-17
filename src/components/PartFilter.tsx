@@ -4,8 +4,8 @@ interface PartFilterProps {
   onFilterChange: (filters: {
     name: string;
     profile: string;
-    grade: string;
     length: string;
+    qty: string;
     weight: string;
   }) => void;
 }
@@ -14,8 +14,8 @@ export default function PartFilter({ onFilterChange }: PartFilterProps) {
   const [filters, setFilters] = React.useState({
     name: '',
     profile: '',
-    grade: '',
     length: '',
+    qty: '',
     weight: ''
   });
 
@@ -56,14 +56,14 @@ export default function PartFilter({ onFilterChange }: PartFilterProps) {
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Kalite
+          Adet
         </label>
         <input
           type="text"
-          name="grade"
-          value={filters.grade}
+          name="qty"
+          value={filters.qty}
           onChange={handleChange}
-          placeholder="Kaliteye göre filtrele"
+          placeholder="Adete göre filtrele"
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
         />
       </div>
