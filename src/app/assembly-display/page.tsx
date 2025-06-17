@@ -24,9 +24,26 @@ type AssemblyData = {
 export default function AssemblyDisplay() {
   const { parsedData } = useXsrStore();
 
+  if (!parsedData) {
+    return <div className="p-4">Veri bulunamadı.</div>;
+  }
+
+  // Convert parsedData to AssemblyData format
+  const assemblyData: AssemblyData = Object.entries(parsedData).reduce((acc, [assemblyName, assembly]) => {
+    acc[assemblyName] = {
+      qty: assembly.qty,
+      weight_kg: assembly.weight_kg,
+      parts: assembly.parts.map(part => ({
+        ...part,
+        tasks: part.defaultTasks ? Object.keys(part.defaultTasks) : []
+      }))
+    };
+    return acc;
+  }, {} as AssemblyData);
+
   return (
     <div className="p-4">
-      {Object.entries(parsedData as AssemblyData).map(
+      {Object.entries(assemblyData).map(
         ([assemblyName, assembly]: [string, Assembly]) => (
           <div key={assemblyName} className="mb-6 p-4 border rounded shadow bg-gray-50">
             <h3 className="text-xl font-bold mb-2">Birleşim: {assemblyName}</h3>
