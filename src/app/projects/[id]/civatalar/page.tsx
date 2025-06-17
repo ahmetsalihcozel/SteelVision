@@ -61,7 +61,7 @@ export default function ProjectBoltsPage() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {project.bolts.map((bolt, index) => (
                     <tr key={index} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{bolt.part}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{bolt.size}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{bolt.qty}</td>
                     </tr>
                   ))}
@@ -84,7 +84,7 @@ export default function ProjectBoltsPage() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {project.washers.map((washer, index) => (
                     <tr key={index} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{washer.part}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{washer.size}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{washer.qty}</td>
                     </tr>
                   ))}
@@ -107,7 +107,7 @@ export default function ProjectBoltsPage() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {project.nuts.map((nut, index) => (
                     <tr key={index} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{nut.part}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{nut.size}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{nut.qty}</td>
                     </tr>
                   ))}
