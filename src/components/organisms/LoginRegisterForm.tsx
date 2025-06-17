@@ -5,6 +5,8 @@ import { handleLogin, handleRegister } from "@/api/handlers";
 export default function LoginRegisterForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [isLogin, setIsLogin] = useState(true);
   const [error, setError] = useState("");
 
@@ -14,12 +16,7 @@ export default function LoginRegisterForm() {
 
     const result = isLogin 
       ? await handleLogin(email, password)
-      : await handleRegister(email, password, {
-          firstName: "",
-          lastName: "",
-          isAdmin: false,
-          createdAt: new Date()
-        });
+      : await handleRegister(email, password, firstName, lastName);
 
     if (result.success) {
       alert(isLogin ? "Giriş başarılı!" : "Kayıt başarılı!");
@@ -48,6 +45,26 @@ export default function LoginRegisterForm() {
           className="w-full mb-2 px-3 py-2 border rounded"
           required
         />
+        {!isLogin && (
+          <>
+            <input
+              type="text"
+              placeholder="Ad"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              className="w-full mb-2 px-3 py-2 border rounded"
+              required
+            />
+            <input
+              type="text"
+              placeholder="Soyad"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              className="w-full mb-2 px-3 py-2 border rounded"
+              required
+            />
+          </>
+        )}
         {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
         <button
           type="submit"
