@@ -3,6 +3,8 @@ import { doc, collection, setDoc, serverTimestamp, getDoc, updateDoc, getDocs, q
 import { db } from "./firebase";
 import { Project, ProjectStatus, ProcessTime, ProcessStatusType, ProcessStatusChange, Part, Assembly, TaskStatus, UserData } from "@/types/types";
 import { loginUser, registerUser, createUserDocument, logoutUser, getProject, updateProject, deleteProject, getFileUrl, checkRegisterKey } from "./firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { storage } from "./firebase";
 
 // Auth Handlers
 export const handleLogin = async (email: string, password: string) => {
@@ -121,7 +123,7 @@ export const handleCreateProject = async (
 
     console.log("📦 Final processed data:", processedData);
 
-    return await createProject(processedData);
+    return await createProject(processedData, files);
   } catch (error) {
     console.error("❌ Error in handleCreateProject:", error);
     return {
@@ -253,10 +255,57 @@ export const handleGetFileUrl = async (path: string) => {
   }
 };
 
-export const createProject = async (projectData: Omit<Project, "id" | "createdAt" | "updatedAt">) => {
+export const createProject = async (projectData: Omit<Project, "id" | "createdAt" | "updatedAt">, files: {
+  coverImage?: File;
+  parcaFiles?: FileList;
+  birlesimFiles?: FileList;
+}) => {
   try {
     const projectRef = doc(collection(db, "projects"));
+    const projectId = projectRef.id;
     const now = Timestamp.now();
+
+    // Dosya yükleme işlemleri
+    try {
+      // Kapak görseli yükleme
+      if (files.coverImage) {
+        const coverImagePath = `projects/${projectId}/${files.coverImage.name}`;
+        const coverImageRef = ref(storage, coverImagePath);
+        await uploadBytes(coverImageRef, files.coverImage);
+        const coverImageUrl = await getDownloadURL(coverImageRef);
+        projectData.coverImageUrl = coverImageUrl;
+      }
+
+      // Parça dosyaları yükleme
+      if (files.parcaFiles && files.parcaFiles.length > 0) {
+        const parcaUrls = await Promise.all(
+          Array.from(files.parcaFiles).map(async (file) => {
+            const cleanedFileName = file.name.replace(/\s*-\s*STANDARD\.pdf$/i, ".pdf");
+            const path = `projects/${projectId}/Parcalar/${cleanedFileName}`;
+            const fileRef = ref(storage, path);
+            await uploadBytes(fileRef, file);
+            return getDownloadURL(fileRef);
+          })
+        );
+        projectData.parcaUrls = parcaUrls;
+      }
+
+      // Birleşim dosyaları yükleme
+      if (files.birlesimFiles && files.birlesimFiles.length > 0) {
+        const birlesimUrls = await Promise.all(
+          Array.from(files.birlesimFiles).map(async (file) => {
+            const cleanedFileName = file.name.replace(/\s*-\s*STANDARD\.pdf$/i, ".pdf");
+            const path = `projects/${projectId}/Birlesimler/${cleanedFileName}`;
+            const fileRef = ref(storage, path);
+            await uploadBytes(fileRef, file);
+            return getDownloadURL(fileRef);
+          })
+        );
+        projectData.birlesimUrls = birlesimUrls;
+      }
+    } catch (uploadError) {
+      throw new Error("Dosya yüklenirken bir hata oluştu: " + (uploadError instanceof Error ? uploadError.message : "Bilinmeyen hata"));
+    }
     
     const processTime: ProcessTime = {
       statusChanges: [{
