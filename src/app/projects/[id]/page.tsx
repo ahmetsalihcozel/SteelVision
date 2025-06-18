@@ -605,7 +605,7 @@ export default function ProjectDetailsPage() {
               {/* Genel İlerleme */}
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <span className="font-semibold">Genel İlerleme</span>
+                  <span className="font-semibold text-gray-800">Genel İlerleme</span>
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-gray-600">
                       {taskStats.completed}/{taskStats.total} Görev
@@ -924,7 +924,7 @@ export default function ProjectDetailsPage() {
       </div>
 
       <div className="max-w-7xl mx-auto p-6">
-        <h2 className="text-2xl font-bold mb-4">
+        <h2 className="text-2xl font-bold mb-4 text-gray-900 mb-4">
           {project.projectName} - Görevler
         </h2>
 
