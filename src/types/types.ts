@@ -33,6 +33,7 @@ export interface Part {
   assemblyInstances: Record<string, AssemblyInstance[]>;
   defaultTasks?: Record<string, TaskStatus>;
   assemblyTasks?: Record<string, Record<string, TaskStatus>>;
+  tasks?: string[];
 }
 
 export interface Assembly {

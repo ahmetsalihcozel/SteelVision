@@ -82,6 +82,8 @@ export default function XsrReaderBolt() {
           part: bolt.size,
           qty: bolt.quantity,
           profile: "",
+          grade: "8.8",
+          length_mm: bolt.size.split('X')[1] || "0",
           weight_kg: "0",
           assemblyInstances: {}
         }))
@@ -93,6 +95,8 @@ export default function XsrReaderBolt() {
           part: nut.size,
           qty: nut.quantity,
           profile: "",
+          grade: "8.8",
+          length_mm: "0",
           weight_kg: "0",
           assemblyInstances: {}
         }))
@@ -104,6 +108,8 @@ export default function XsrReaderBolt() {
           part: washer.size,
           qty: washer.quantity,
           profile: "",
+          grade: "8.8",
+          length_mm: "0",
           weight_kg: "0",
           assemblyInstances: {}
         }))
