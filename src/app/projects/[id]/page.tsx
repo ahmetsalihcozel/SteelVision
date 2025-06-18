@@ -636,7 +636,7 @@ export default function ProjectDetailsPage() {
                 return (
                   <div key={taskName}>
                     <div className="flex justify-between items-center mb-2">
-                      <span className="font-semibold">{taskName}</span>
+                      <span className="text-gray-800 font-semibold">{taskName}</span>
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-gray-600">
                           {stats.completed}/{stats.total} Görev

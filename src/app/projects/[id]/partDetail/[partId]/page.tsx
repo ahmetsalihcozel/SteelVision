@@ -574,7 +574,7 @@ export default function PartDetailPage() {
 
           {assembliesWithPart.length > 0 && (
             <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-lg font-semibold mb-4">Bu Parçanın Kullanıldığı Birleşimler</h3>
+              <h3 className="text-lg font-semibold mb-4 text-gray-800">Bu Parçanın Kullanıldığı Birleşimler</h3>
               <div className="space-y-3">
                 {assembliesWithPart.map((assembly) => (
                   <div key={assembly.name} className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b pb-2">
@@ -619,7 +619,7 @@ export default function PartDetailPage() {
                     >
                       {`${assemblyName} `}
                     </Link>
-                    <p className="text-md">içinde {partId} görevleri:</p>
+                    <p className="text-md text-gray-800">içinde {partId} görevleri:</p>
                   </div>
                   <span className="text-sm text-gray-600">
                     {instances.length} Örnek
@@ -641,7 +641,7 @@ export default function PartDetailPage() {
 
                     return (
                       <div key={`${assemblyName}-${instance.id}`} className="rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-shadow duration-200">
-                        <h3 className="font-semibold mb-2">Birleşim #{instance.id}</h3>
+                        <h3 className="font-semibold mb-2 text-gray-800">Birleşim #{instance.id}</h3>
                         {hasTasks ? (
                           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                             {Object.entries(instance.tasks as Record<string, TaskStatus>)
@@ -667,7 +667,7 @@ export default function PartDetailPage() {
                                     }}
                                   >
                                     <div className="flex items-center justify-between">
-                                      <span className="text-sm">{task}</span>
+                                      <span className="text-sm text-gray-800">{task}</span>
                                       <div className="flex items-center gap-2">
                                         <input
                                           type="checkbox"
@@ -682,7 +682,7 @@ export default function PartDetailPage() {
                                           className={`w-4 h-4 ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                                           onClick={(e) => e.stopPropagation()}
                                         />
-                                        <span className="text-sm">
+                                        <span className="text-sm text-gray-800">
                                           {isChecked ? "✓" : "⏳"}
                                         </span>
                                       </div>
