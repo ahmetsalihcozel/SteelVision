@@ -4,13 +4,12 @@ import { useXsrStore } from "@/stores/xsrStore";
 import { useParams } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import { getDownloadURL, ref } from "firebase/storage";
-import { storage, db, getSiteUrl } from "@/api/firebase";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { storage, db, getSiteUrl, getProject } from "@/api/firebase";
+import { doc, getDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import Link from "next/link";
 import { QRCodeSVG } from 'qrcode.react';
 import { useAuth } from "@/context/AuthContex";
 import { Part, TaskStatus, Assembly, Project, AssemblyInstance } from "@/types/types";
-import { handleUpdateTaskStatus } from "@/api/handlers";
 
 interface User {
   email: string;
@@ -33,6 +32,8 @@ export default function AssemblyDetailPage() {
   const [userData, setUserData] = useState<{ firstName: string; lastName: string; isAdmin: boolean } | null>(null);
   const [siteUrl, setSiteUrl] = useState("http://localhost:3000");
   const [isPdfFullscreen, setIsPdfFullscreen] = useState(false);
+  const [project, setProject] = useState<Project | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // URL'deki "-" karakterini "/" ile değiştir
   const originalAssemblyId = assemblyIdStr?.replace(/-/g, "/") || "";
@@ -76,71 +77,49 @@ export default function AssemblyDetailPage() {
 
   // Proje verisini yükle
   useEffect(() => {
-    const fetchProject = async () => {
-      if (!projectId || !assemblyIdStr) {
-        console.error("❌ Missing required parameters:", { projectId, assemblyIdStr });
-        setError("Proje ID veya Birleşim ID eksik.");
-        setLoading(false);
-        return;
-      }
-      
+    const fetchProjectData = async () => {
+      if (!projectId) return;
+
       try {
-        setLoading(true);
-        const docRef = doc(db, "projects", projectId);
-        const docSnap = await getDoc(docRef);
-
-        if (!docSnap.exists()) {
-          console.error("❌ Project not found:", projectId);
-          setError("Proje bulunamadı.");
-          setLoading(false);
-          return;
+        // Eğer store'da proje yoksa, fetch et
+        if (!viewingProject) {
+          const projectData = await getProject(projectId);
+          if (projectData) {
+            setProject(projectData);
+            setViewingProject(projectData);
+            setIsAdmin(userData?.isAdmin || false);
+          } else {
+            setError("Proje bulunamadı.");
+          }
+        } else {
+          setProject(viewingProject);
+          setIsAdmin(userData?.isAdmin || false);
         }
-
-        const data = docSnap.data();
-
-        const project: Project = {
-          id: docSnap.id,
-          projectName: data.projectName,
-          total_kg: data.total_kg,
-          projectStatus: data.projectStatus,
-          createdAt: data.createdAt,
-          assemblies: data.assemblies || {},
-          parts: data.parts || [],
-          bolts: data.bolts || [],
-          washers: data.washers || [],
-          nuts: data.nuts || []
-        };
-
-        const assembly = project.assemblies[originalAssemblyId];
-        
-        if (!assembly) {
-          console.error("❌ Assembly not found:", { 
-            assemblyId: originalAssemblyId, 
-            availableAssemblies: Object.keys(project.assemblies) 
-          });
-          setError(`Birleşim bulunamadı: ${originalAssemblyId}`);
-          setLoading(false);
-          return;
-        }
-
-        setViewingProject(project);
-
-        // Assembly'nin parçalarını al
-        const assemblyParts = project.parts.filter(part => 
-          assembly.parts.some((assemblyPart: Part) => assemblyPart.part === part.part)
-        );
-
-        setAssemblyParts(assemblyParts);
       } catch (error) {
-        console.error("❌ Error fetching project:", error);
-        setError(`Proje yüklenirken bir hata oluştu: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}`);
+        console.error("Error fetching project:", error);
+        setError("Proje yüklenirken bir hata oluştu.");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProject();
-  }, [projectId, assemblyIdStr, originalAssemblyId, setViewingProject]);
+    fetchProjectData();
+
+    // Real-time updates için listener
+    if (!projectId) return;
+    const projectRef = doc(db, "projects", projectId);
+    const unsubscribe = onSnapshot(projectRef, (doc) => {
+      if (doc.exists()) {
+        const projectData = doc.data() as Project;
+        setProject(projectData);
+        setViewingProject(projectData);
+      }
+    }, (error) => {
+      console.error("Error listening to project updates:", error);
+    });
+
+    return () => unsubscribe();
+  }, [projectId, viewingProject, setViewingProject, userData]);
 
   // PDF yükleme işlemi için hata yönetimi
   useEffect(() => {

@@ -3,7 +3,7 @@ import { useXsrStore } from "@/stores/xsrStore";
 import { useParams, useRouter } from "next/navigation";
 import React, { useEffect, useState, useMemo, useRef } from "react";
 import { getDownloadURL, ref } from "firebase/storage";
-import { storage, getSiteUrl } from "@/api/firebase";
+import { storage, getSiteUrl, getProject } from "@/api/firebase";
 import Link from "next/link";
 import { QRCodeSVG } from 'qrcode.react';
 import { doc, onSnapshot, updateDoc, getDoc } from "firebase/firestore";
@@ -21,7 +21,7 @@ export default function PartDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [project, setProject] = useState<Project | null>(null);
-  const [userData, setUserData] = useState<{ firstName: string; lastName: string; isAdmin: boolean } | null>(null);
+  const { userData } = useAuth();
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const qrRef = useRef<HTMLDivElement>(null);
   const [siteUrl, setSiteUrl] = useState("http://localhost:3000");
@@ -66,28 +66,49 @@ export default function PartDetailPage() {
   }, [assembliesWithPart]);
 
   useEffect(() => {
-    if (!projectId) return;
+    const fetchProjectData = async () => {
+      if (!projectId) return;
 
+      try {
+        // Eğer store'da proje yoksa, fetch et
+        if (!viewingProject) {
+          const projectData = await getProject(projectId);
+          if (projectData) {
+            setProject(projectData);
+            setViewingProject(projectData);
+            setIsAdmin(userData?.isAdmin || false);
+          } else {
+            setError("Proje bulunamadı.");
+          }
+        } else {
+          setProject(viewingProject);
+          setIsAdmin(userData?.isAdmin || false);
+        }
+      } catch (error) {
+        console.error("Error fetching project:", error);
+        setError("Proje yüklenirken bir hata oluştu.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProjectData();
+
+    // Real-time updates için listener
+    if (!projectId) return;
     const projectRef = doc(db, "projects", projectId);
-    
     const unsubscribe = onSnapshot(projectRef, (doc) => {
       if (doc.exists()) {
         const projectData = doc.data() as Project;
         setProject(projectData);
         setViewingProject(projectData);
-        setIsAdmin(userData?.isAdmin || false);
-      } else {
-        setError("Proje bulunamadı.");
       }
-      setLoading(false);
     }, (error) => {
       console.error("Error listening to project updates:", error);
-      setError("Proje güncellenirken bir hata oluştu.");
-      setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [projectId, setViewingProject, userData]);
+  }, [projectId, viewingProject, setViewingProject, userData]);
 
   // Kullanıcı verilerini yükle
   useEffect(() => {
@@ -99,11 +120,7 @@ export default function PartDetailPage() {
         const userDocSnap = await getDoc(userDocRef);
         if (userDocSnap.exists()) {
           const data = userDocSnap.data();
-          setUserData({
-            firstName: data.firstName,
-            lastName: data.lastName,
-            isAdmin: data.isAdmin
-          });
+          // User data is already handled by AuthProvider
         }
       } catch (error) {
         console.error("Kullanıcı verileri yüklenirken hata:", error);
