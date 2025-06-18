@@ -17,6 +17,10 @@ export interface AssemblyInstance {
 
 export interface Note {
   id?: string;
+  text: string;
+  partId: string;
+  assemblyId: string;
+  instanceId: number;
   addedBy: string;
   addedAt: string;
   stringValue: string;
@@ -43,28 +47,39 @@ export interface Assembly {
   tasks?: string[];
 }
 
+export interface Bolt {
+  id: string;
+  qty: string;
+  grade: string;
+  size: string;
+}
+
+export interface Washer {
+  id: string;
+  qty: string;
+  grade: string;
+  size: string;
+}
+
+export interface Nut {
+  id: string;
+  qty: string;
+  grade: string;
+  size: string;
+}
+
 export interface Project {
   id: string;
   projectName: string;
+  projectStatus: string;
   total_kg: number;
-  projectStatus: ProjectStatus;
-  createdAt: {
-    seconds: number;
-    nanoseconds: number;
-  };
-  updatedAt?: {
-    seconds: number;
-    nanoseconds: number;
-  };
-  assemblies: Record<string, Assembly>;
+  createdAt: any;
   parts: Part[];
-  bolts: Fastener[];
-  washers: Fastener[];
-  nuts: Fastener[];
-  coverImageUrl?: string;
-  parcaUrls?: string[];
-  birlesimUrls?: string[];
-  processTime?: ProcessTime;
+  assemblies: { [key: string]: Assembly };
+  bolts?: Bolt[];
+  washers?: Washer[];
+  nuts?: Nut[];
+  notes?: { [key: string]: Note };
 }
 
 export interface UserData {
@@ -113,4 +128,4 @@ export interface XsrStore {
   setViewingProject: (project: Project) => void;
   parsedData: ParsedData | null;
   setParsedData: (data: ParsedData) => void;
-} 
+}

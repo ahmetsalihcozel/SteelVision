@@ -362,10 +362,13 @@ export default function ProjectDetailsPage() {
             updatedAssemblyInstances[selectedPart.assemblyId] = updatedAssemblyInstances[selectedPart.assemblyId].map(instance => {
               if (instance.id === selectedPart.instanceId) {
                 const newNote: Note = {
+                  text: noteText,
+                  partId: selectedPart.partId,
+                  assemblyId: selectedPart.assemblyId,
+                  instanceId: selectedPart.instanceId,
                   addedBy: `${userData.firstName} ${userData.lastName}`,
                   addedAt: new Date().toISOString(),
-                  stringValue: noteText.trim(),
-                  id: Date.now().toString()
+                  stringValue: noteText
                 };
 
                 return {
@@ -754,42 +757,58 @@ export default function ProjectDetailsPage() {
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl shadow-lg p-6 max-h-100 overflow-y-scroll">
+        <div className="bg-white rounded-xl shadow-lg p-6 max-h-[500px] overflow-y-auto">
           <h2 className="text-xl font-bold text-gray-900 mb-4">Son Yapılan Görevler</h2>
           <div className="space-y-4">
-            {recentTasks.length > 0 ? (
-              recentTasks.map((task) => (
-                <div key={task.key} className="pb-4 border-b border-gray-100 last:border-0">
-                  <div className="flex justify-between items-start">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold">
-                          <Link 
-                            href={`/projects/${projectId}/partDetail/${task.partId}`}
-                            className="text-blue-600 hover:text-blue-800 hover:underline"
-                          >
-                            {task.partId}
-                          </Link>
-                      </h3>
+            {project.parts && Object.entries(
+              project.parts.reduce((acc, part) => {
+                Object.entries(part.assemblyInstances || {}).forEach(([assemblyId, instances]) => {
+                  instances.forEach(instance => {
+                    Object.entries(instance.tasks || {}).forEach(([taskName, task]) => {
+                      if (task.isDone) {
+                        const key = `${part.part}-${assemblyId}-${instance.id}-${taskName}`;
+                        if (!acc[key]) {
+                          acc[key] = {
+                            partId: part.part,
+                            assemblyId,
+                            instanceId: instance.id,
+                            taskName,
+                            task
+                          };
+                        }
+                      }
+                    });
+                  });
+                });
+                return acc;
+              }, {} as Record<string, { partId: string; assemblyId: string; instanceId: number; taskName: string; task: TaskStatus }>)
+            )
+              .sort(([, a], [, b]) => new Date(b.task.doneAt || '').getTime() - new Date(a.task.doneAt || '').getTime())
+              .map(([key, data]) => (
+                <div key={key} className="bg-gray-50 p-4 rounded-lg">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                      <Link 
+                        href={`/projects/${projectId}/partDetail/${data.partId}`}
+                        className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                      >
+                        {data.partId}
+                      </Link>
+                      <div className="flex flex-wrap gap-2">
                         <span className="px-2.5 py-1 text-xs font-medium bg-stone-100 text-stone-800 rounded-full">
-                          {task.taskName}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="px-2.5 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                          {task.assemblyName}
+                          {data.assemblyId}
                         </span>
                         <span className="px-2.5 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded-full">
-                          Örnek #{task.instanceId}
+                          Örnek #{data.instanceId}
                         </span>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-medium text-gray-900 bg-green-50 text-green-800 px-3 py-1 rounded-full inline-block">
-                        {task.doneBy}
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                      <p className="text-sm font-medium text-gray-900 bg-green-50 text-green-800 px-3 py-1 rounded-full">
+                        {data.task.doneBy}
                       </p>
-                      <p className="text-sm text-gray-600 mt-1">
-                        {new Date(task.doneAt).toLocaleDateString('tr-TR', {
+                      <p className="text-sm text-gray-600">
+                        {new Date(data.task.doneAt || '').toLocaleDateString('tr-TR', {
                           day: '2-digit',
                           month: '2-digit',
                           year: 'numeric',
@@ -799,10 +818,106 @@ export default function ProjectDetailsPage() {
                       </p>
                     </div>
                   </div>
+                  <div className="mt-2">
+                    <p className="text-sm text-gray-800 bg-white p-2 rounded border border-gray-100">
+                      {data.taskName}
+                    </p>
+                  </div>
                 </div>
-              ))
-            ) : (
-              <p className="text-gray-500 text-center py-4">Henüz tamamlanan görev bulunmamaktadır.</p>
+              ))}
+            {(!project.parts || project.parts.every(part => 
+              Object.values(part.assemblyInstances || {}).every(instances => 
+                instances.every(instance => 
+                  Object.values(instance.tasks || {}).every(task => !task.isDone)
+                )
+              )
+            )) && (
+              <p className="text-gray-500 text-center py-4">Henüz tamamlanmış görev bulunmamaktadır.</p>
+            )}
+          </div>
+        </div>
+
+        {/* Son Bırakılan Notlar */}
+        <div className="bg-white rounded-xl shadow-lg p-6 max-h-[500px] overflow-y-auto mt-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Son Bırakılan Notlar</h2>
+          <div className="space-y-4">
+            {project.parts && Object.entries(
+              project.parts.reduce((acc, part) => {
+                Object.entries(part.assemblyInstances || {}).forEach(([assemblyId, instances]) => {
+                  instances.forEach(instance => {
+                    if (instance.notes && instance.notes.length > 0) {
+                      const key = `${part.part}-${assemblyId}-${instance.id}`;
+                      if (!acc[key]) {
+                        acc[key] = {
+                          partId: part.part,
+                          assemblyId,
+                          instanceId: instance.id,
+                          notes: []
+                        };
+                      }
+                      acc[key].notes.push(...instance.notes);
+                    }
+                  });
+                });
+                return acc;
+              }, {} as Record<string, { partId: string; assemblyId: string; instanceId: number; notes: Note[] }>)
+            )
+              .sort(([, a], [, b]) => {
+                const aLatestNote = a.notes.sort((x, y) => new Date(y.addedAt).getTime() - new Date(x.addedAt).getTime())[0];
+                const bLatestNote = b.notes.sort((x, y) => new Date(y.addedAt).getTime() - new Date(x.addedAt).getTime())[0];
+                return new Date(bLatestNote.addedAt).getTime() - new Date(aLatestNote.addedAt).getTime();
+              })
+              .map(([key, data]) => (
+                <div key={key} className="bg-gray-50 p-4 rounded-lg">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
+                    <Link 
+                      href={`/projects/${projectId}/partDetail/${data.partId}`}
+                      className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                    >
+                      {data.partId}
+                    </Link>
+                    <div className="flex flex-wrap gap-2">
+                      <span className="px-2.5 py-1 text-xs font-medium bg-stone-100 text-stone-800 rounded-full">
+                        {data.assemblyId}
+                      </span>
+                      <span className="px-2.5 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded-full">
+                        Örnek #{data.instanceId}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    {data.notes
+                      .sort((a, b) => new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime())
+                      .map((note, index) => (
+                        <div key={`${key}-${index}`} className="bg-white p-3 rounded-lg border border-gray-100">
+                          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                            <p className="text-sm text-gray-800 flex-1">{note.stringValue}</p>
+                            <div className="flex flex-col items-end gap-1 min-w-[200px]">
+                              <p className="text-sm font-medium text-gray-900 bg-green-50 text-green-800 px-3 py-1 rounded-full w-fit">
+                                {note.addedBy}
+                              </p>
+                              <p className="text-sm text-gray-600">
+                                {new Date(note.addedAt).toLocaleDateString('tr-TR', {
+                                  day: '2-digit',
+                                  month: '2-digit',
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              ))}
+            {(!project.parts || project.parts.every(part => 
+              Object.values(part.assemblyInstances || {}).every(instances => 
+                instances.every(instance => !instance.notes || instance.notes.length === 0)
+              )
+            )) && (
+              <p className="text-gray-500 text-center py-4">Henüz bırakılmış not bulunmamaktadır.</p>
             )}
           </div>
         </div>
