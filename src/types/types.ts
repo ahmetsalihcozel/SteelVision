@@ -48,24 +48,21 @@ export interface Assembly {
 }
 
 export interface Bolt {
-  id: string;
-  qty: string;
-  grade: string;
   size: string;
+  qty: string;
+  name: string;
 }
 
 export interface Washer {
-  id: string;
-  qty: string;
-  grade: string;
   size: string;
+  qty: string;
+  name: string;
 }
 
 export interface Nut {
-  id: string;
-  qty: string;
-  grade: string;
   size: string;
+  qty: string;
+  name: string;
 }
 
 export interface Project {
@@ -80,6 +77,9 @@ export interface Project {
   washers?: Washer[];
   nuts?: Nut[];
   notes?: { [key: string]: Note };
+  coverImageUrl?: string;
+  parcaUrls?: string[];
+  birlesimUrls?: string[];
 }
 
 export interface UserData {
@@ -94,19 +94,6 @@ export interface Fastener {
   size: string;
   qty: string;
   name: string;
-}
-
-export type ProcessStatusType = 'start' | 'continue' | 'suspend' | 'finish';
-
-export interface ProcessStatusChange {
-  type: ProcessStatusType;
-  date: string;
-  workerCount?: number;
-  notes?: string;
-}
-
-export interface ProcessTime {
-  statusChanges: ProcessStatusChange[];
 }
 
 export type ParsedData = Record<string, Assembly>;

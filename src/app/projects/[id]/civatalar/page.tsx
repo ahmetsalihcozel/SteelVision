@@ -56,15 +56,23 @@ export default function ProjectBoltsPage() {
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider">Parça No</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider">Adet</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider">Adı</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {project.bolts.map((bolt, index) => (
+                  {project.bolts?.map((bolt, index) => (
                     <tr key={index} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{bolt.size}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{bolt.qty}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{bolt.name}</td>
                     </tr>
-                  ))}
+                  )) || (
+                    <tr>
+                      <td colSpan={3} className="px-6 py-4 text-center text-gray-500">
+                        Henüz cıvata eklenmemiş
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -79,15 +87,23 @@ export default function ProjectBoltsPage() {
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider">Parça No</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider">Adet</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider">Adı</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {project.washers.map((washer, index) => (
+                  {project.washers?.map((washer, index) => (
                     <tr key={index} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{washer.size}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{washer.qty}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{washer.name}</td>
                     </tr>
-                  ))}
+                  )) || (
+                    <tr>
+                      <td colSpan={3} className="px-6 py-4 text-center text-gray-500">
+                        Henüz pul eklenmemiş
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -102,15 +118,23 @@ export default function ProjectBoltsPage() {
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider">Parça No</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider">Adet</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider">Adı</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {project.nuts.map((nut, index) => (
+                  {project.nuts?.map((nut, index) => (
                     <tr key={index} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{nut.size}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{nut.qty}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{nut.name}</td>
                     </tr>
-                  ))}
+                  )) || (
+                    <tr>
+                      <td colSpan={3} className="px-6 py-4 text-center text-gray-500">
+                        Henüz somun eklenmemiş
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>

@@ -1,7 +1,7 @@
 import { User } from 'firebase/auth';
 import { doc, collection, setDoc, serverTimestamp, getDoc, updateDoc, getDocs, query, where, Timestamp } from "firebase/firestore";
 import { db } from "./firebase";
-import { Project, ProjectStatus, ProcessTime, ProcessStatusType, ProcessStatusChange, Part, Assembly, TaskStatus, UserData } from "@/types/types";
+import { Project, ProjectStatus, Part, Assembly, TaskStatus, UserData } from "@/types/types";
 import { loginUser, registerUser, createUserDocument, logoutUser, getProject, updateProject, deleteProject, getFileUrl, checkRegisterKey } from "./firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "./firebase";
@@ -69,16 +69,6 @@ export const handleCreateProject = async (
       createdAt: projectData.createdAt || {
         seconds: Math.floor(Date.now() / 1000),
         nanoseconds: 0
-      },
-      processTime: {
-        statusChanges: [
-          {
-            type: 'start' as ProcessStatusType,
-            date: new Date().toISOString(),
-            workerCount: 1, // Varsayılan olarak 1 işçi ile başlat
-            notes: 'Proje başlatıldı'
-          }
-        ]
       }
     };
 
@@ -255,11 +245,11 @@ export const handleGetFileUrl = async (path: string) => {
   }
 };
 
-export const createProject = async (projectData: Omit<Project, "id" | "createdAt" | "updatedAt">, files: {
+export const createProject = async (projectData: Partial<Project>, files: {
   coverImage?: File;
   parcaFiles?: FileList;
   birlesimFiles?: FileList;
-}) => {
+}): Promise<{ success: boolean; projectId?: string; error?: string }> => {
   try {
     const projectRef = doc(collection(db, "projects"));
     const projectId = projectRef.id;
@@ -306,27 +296,25 @@ export const createProject = async (projectData: Omit<Project, "id" | "createdAt
     } catch (uploadError) {
       throw new Error("Dosya yüklenirken bir hata oluştu: " + (uploadError instanceof Error ? uploadError.message : "Bilinmeyen hata"));
     }
-    
-    const processTime: ProcessTime = {
-      statusChanges: [{
-        type: 'start' as ProcessStatusType,
-        date: now.toDate().toISOString(),
-        workerCount: 1,
-        notes: 'Proje başlatıldı'
-      }]
+
+    const newProject: Project = {
+      id: projectId,
+      projectName: projectData.projectName || "",
+      projectStatus: "beklemede",
+      total_kg: projectData.total_kg || 0,
+      createdAt: now,
+      parts: projectData.parts || [],
+      assemblies: projectData.assemblies || {},
+      bolts: projectData.bolts || [],
+      washers: projectData.washers || [],
+      nuts: projectData.nuts || [],
+      notes: {},
+      coverImageUrl: projectData.coverImageUrl,
+      parcaUrls: projectData.parcaUrls,
+      birlesimUrls: projectData.birlesimUrls
     };
 
-    const project: Project = {
-      ...projectData,
-      id: projectRef.id,
-      createdAt: {
-        seconds: now.seconds,
-        nanoseconds: now.nanoseconds
-      },
-      processTime
-    };
-
-    await setDoc(projectRef, project);
+    await setDoc(projectRef, newProject);
     return { success: true, projectId: projectRef.id };
   } catch (error) {
     console.error("Error creating project:", error);
@@ -336,50 +324,24 @@ export const createProject = async (projectData: Omit<Project, "id" | "createdAt
 
 export const updateProjectStatus = async (
   projectId: string,
-  statusType: ProcessStatusType,
-  workerCount?: number,
+  status: ProjectStatus,
   notes?: string
-) => {
+): Promise<void> => {
   try {
     const projectRef = doc(db, "projects", projectId);
     const projectDoc = await getDoc(projectRef);
-    
+
     if (!projectDoc.exists()) {
       throw new Error("Project not found");
     }
 
-    const project = projectDoc.data() as Project;
-    const statusChange: ProcessStatusChange = {
-      type: statusType,
-      date: new Date().toISOString(),
-      notes
-    };
-
-    if (statusType === 'start' || statusType === 'continue') {
-      if (!workerCount) {
-        throw new Error("Worker count is required for start and continue status");
-      }
-      statusChange.workerCount = workerCount;
-    }
-
-    const newStatus = statusType === 'finish' ? 'bitti' :
-                     statusType === 'suspend' ? 'beklemede' :
-                     'devam ediyor';
-
     await updateDoc(projectRef, {
-      projectStatus: newStatus,
-      processTime: {
-        statusChanges: [
-          ...(project.processTime?.statusChanges || []),
-          statusChange
-        ]
-      }
+      projectStatus: status
     });
 
-    return { success: true };
   } catch (error) {
     console.error("Error updating project status:", error);
-    return { success: false, error: (error as Error).message };
+    throw error;
   }
 };
 
