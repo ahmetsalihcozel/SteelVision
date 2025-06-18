@@ -1,4 +1,3 @@
-// src/api/firebase.tsx
 import { initializeApp, getApps } from "firebase/app";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, User } from "firebase/auth";
 import { getFirestore, collection, getDocs, doc, getDoc, updateDoc, deleteDoc, setDoc, serverTimestamp } from "firebase/firestore";
@@ -15,13 +14,11 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
-// Initialize Firebase
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
 
-// Auth Operations
 export const loginUser = async (email: string, password: string) => {
   try {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -62,7 +59,6 @@ export const logoutUser = async () => {
     return { success: true };
   } catch (error) {
     
-    // Firebase hata kodlarını kontrol et
     if (error instanceof Error) {
       const errorMessage = error.message;
       console.error("Hata detayları:", {
@@ -71,7 +67,6 @@ export const logoutUser = async () => {
         stack: error.stack
       });
 
-      // Firebase spesifik hata kodlarını kontrol et
       if (errorMessage.includes("auth/")) {
         const errorCode = errorMessage.split("auth/")[1];
       }
@@ -88,7 +83,6 @@ export const logoutUser = async () => {
   }
 };
 
-// Project Functions
 export const createProject = async (
   projectData: Omit<Project, "id">,
   files: {
@@ -102,9 +96,7 @@ export const createProject = async (
     const projectRef = doc(collection(db, "projects"));
     const projectId = projectRef.id;
 
-    // Dosya yükleme işlemleri
     try {
-      // Kapak görseli yükleme
       if (files.coverImage) {
         const coverImagePath = `projects/${projectId}/${files.coverImage.name}`;
         const coverImageRef = ref(storage, coverImagePath);
@@ -113,11 +105,9 @@ export const createProject = async (
         projectData.coverImageUrl = coverImageUrl;
       }
 
-      // Parça dosyaları yükleme
       if (files.parcaFiles && files.parcaFiles.length > 0) {
         const parcaUrls = await Promise.all(
           Array.from(files.parcaFiles).map(async (file) => {
-            // Dosya adından " - STANDARD" kısmını kaldır
             const cleanedFileName = file.name.replace(/\s*-\s*STANDARD\.pdf$/i, ".pdf");
             const path = `projects/${projectId}/Parcalar/${cleanedFileName}`;
             const fileRef = ref(storage, path);
@@ -128,11 +118,9 @@ export const createProject = async (
         projectData.parcaUrls = parcaUrls;
       }
 
-      // Birleşim dosyaları yükleme
       if (files.birlesimFiles && files.birlesimFiles.length > 0) {
         const birlesimUrls = await Promise.all(
           Array.from(files.birlesimFiles).map(async (file) => {
-            // Dosya adından " - STANDARD" kısmını kaldır
             const cleanedFileName = file.name.replace(/\s*-\s*STANDARD\.pdf$/i, ".pdf");
             const path = `projects/${projectId}/Birlesimler/${cleanedFileName}`;
             const fileRef = ref(storage, path);
@@ -146,17 +134,14 @@ export const createProject = async (
       throw new Error("Dosya yüklenirken bir hata oluştu: " + (uploadError instanceof Error ? uploadError.message : "Bilinmeyen hata"));
     }
 
-    // Ensure parts array exists and has default values
     if (!projectData.parts) {
       projectData.parts = [];
     }
 
-    // Ensure assemblies object exists
     if (!projectData.assemblies) {
       projectData.assemblies = {};
     }
 
-    // Process parts and ensure they have required properties
     projectData.parts = projectData.parts.map(part => {
       if (!part.part || !part.qty) {
         console.warn("⚠️ Invalid part found:", part);
@@ -167,7 +152,6 @@ export const createProject = async (
       };
     });
 
-    // Process assemblies and their parts
     Object.entries(projectData.assemblies).forEach(([assemblyId, assembly]) => {
       if (!assembly) {
         console.warn(`⚠️ Invalid assembly found for ID: ${assemblyId}`);
@@ -252,7 +236,6 @@ export const deleteProject = async (projectId: string): Promise<{ success: boole
     if (projectDoc.exists()) {
       const projectData = projectDoc.data() as Project;
       
-      // Delete associated files
       if (projectData.coverImageUrl) {
         const coverImageRef = ref(storage, projectData.coverImageUrl);
         await deleteObject(coverImageRef);
@@ -270,7 +253,6 @@ export const deleteProject = async (projectId: string): Promise<{ success: boole
         );
       }
 
-      // Delete project document
       await deleteDoc(projectRef);
       return { success: true };
     }
@@ -296,7 +278,6 @@ export const getAllProjects = async (): Promise<Project[]> => {
   }
 };
 
-// Storage Operations
 export const uploadFile = async (path: string, file: File) => {
   const storageRef = ref(storage, path);
   await uploadBytes(storageRef, file);
@@ -308,7 +289,6 @@ export const getFileUrl = async (path: string) => {
   return getDownloadURL(storageRef);
 };
 
-// User Operations
 export const createUserDocument = async (uid: string, userData: UserData) => {
   const userRef = doc(db, "users", uid);
   await setDoc(userRef, {
@@ -323,7 +303,6 @@ export const getUserDocument = async (uid: string) => {
   return userSnap.exists() ? userSnap.data() : null;
 };
 
-// Configuration Operations
 export const getDefaultTasks = async (): Promise<Record<string, { set: boolean; isDone: boolean }>> => {
   try {
     const configRef = doc(db, "configurations", "Pe1vgl6aRhjs4Zp4CqfZ");

@@ -28,7 +28,6 @@ export default function AssemblyDisplay() {
     return <div className="p-4">Veri bulunamadı.</div>;
   }
 
-  // Convert parsedData to AssemblyData format
   const assemblyData: AssemblyData = Object.entries(parsedData).reduce((acc, [assemblyName, assembly]) => {
     acc[assemblyName] = {
       qty: assembly.qty,

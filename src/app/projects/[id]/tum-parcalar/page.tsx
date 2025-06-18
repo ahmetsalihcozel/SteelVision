@@ -19,7 +19,6 @@ export default function TumParcalarPage() {
     console.log(viewingProject)
   }, [viewingProject]);
 
-  // Tüm assemblies içindeki tüm part'ları düzleştir
   const allParts = useMemo(() => {
     if (!viewingProject?.parts) return [];
 
@@ -27,9 +26,7 @@ export default function TumParcalarPage() {
     viewingProject.parts.forEach((part) => {
       if (partMap.has(part.part)) {
         const existingPart = partMap.get(part.part)!;
-        // Mevcut parçanın miktarını güncelle
         existingPart.qty = (parseInt(existingPart.qty) + parseInt(part.qty)).toString();
-        // Assembly instances'ları birleştir
         existingPart.assemblyInstances = {
           ...existingPart.assemblyInstances,
           ...part.assemblyInstances

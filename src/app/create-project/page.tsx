@@ -34,7 +34,6 @@ export default function CreateProjectPage() {
     if (parsedData) {
       console.log('XSR Parsed Data:', parsedData);
       
-      // XSR'den gelen toplam ağırlığı kullan
       if (parsedData.total_kg) {
         setFormData(prev => ({
           ...prev,

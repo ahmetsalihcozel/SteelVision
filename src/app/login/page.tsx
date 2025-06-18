@@ -19,7 +19,7 @@ export default function LoginPage() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       alert("Giriş başarılı!");
-      router.push("/projects"); // Redirect to dashboard after successful login
+      router.push("/projects");
     } catch (err: any) {
       setError(err.message);
     }

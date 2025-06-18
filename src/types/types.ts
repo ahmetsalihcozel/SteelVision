@@ -1,4 +1,3 @@
-// Auth Types
 export type UserRole = 'admin' | 'user';
 
 export type ProjectStatus = "beklemede" | "devam ediyor" | "bitti";
@@ -97,7 +96,6 @@ export interface ProcessTime {
 
 export type ParsedData = Record<string, Assembly>;
 
-// Form Types
 export interface CreateProjectFormProps {
   assemblies?: Record<string, Assembly>;
   parts?: Part[];
@@ -105,13 +103,11 @@ export interface CreateProjectFormProps {
   bolts?: any[];
 }
 
-// Component Props Types
 export interface AggregatedPartsTableProps {
   data: ParsedData;
   onSaveTasks?: (updatedData: ParsedData) => void;
 }
 
-// Store Types
 export interface XsrStore {
   viewingProject: Project | null;
   setViewingProject: (project: Project) => void;

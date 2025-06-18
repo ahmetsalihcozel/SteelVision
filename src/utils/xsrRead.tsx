@@ -8,26 +8,25 @@ const readXSRFile = async (file: File): Promise<{ parts: Part[], totalWeight: nu
         const text = e.target?.result as string;
         const lines = text.split('\n');
         
-        // Total değerini bul
+
         const totalLine = lines.find(line => line.includes('Total:'));
         const totalWeight = totalLine ? parseFloat(totalLine.split('Total:')[1].trim()) : 0;
         
-        // Başlık satırını atla ve boş satırları filtrele
+
+        
         const dataLines = lines
-          .slice(1) // İlk satırı (başlık) atla
-          .filter(line => line.trim() !== ''); // Boş satırları filtrele
+          .slice(1) 
+          .filter(line => line.trim() !== '');
 
         const parts: Part[] = dataLines.map((line, index) => {
           const [part, profile, grade, length_mm, qty, weight_kg] = line
             .split('\t')
             .map(item => item.trim());
 
-          // Eğer satır başlık satırı ise veya gerekli alanlar eksikse atla
           if (part === 'Assembly' || !part || !profile || !grade) {
             return null;
           }
 
-          // Toplam ağırlığı hesapla
           const weight = parseFloat(weight_kg) || 0;
           const quantity = parseInt(qty) || 0;
 
@@ -41,7 +40,7 @@ const readXSRFile = async (file: File): Promise<{ parts: Part[], totalWeight: nu
             assemblyInstances: {},
             assemblyTasks: {}
           } as Part;
-        }).filter((part): part is Part => part !== null); // null değerleri filtrele
+        }).filter((part): part is Part => part !== null);
 
         resolve({ parts, totalWeight });
       } catch (error) {

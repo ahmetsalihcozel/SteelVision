@@ -63,14 +63,12 @@ export default function ProjectDetailsPage() {
       try {
         setLoading(true);
 
-        // Önce store'dan kontrol et
         if (viewingProject?.id === projectId) {
           setProject(viewingProject);
           setLoading(false);
           return;
         }
 
-        // Store'da yoksa Firebase'den çek
         const projectData = await getProject(projectId);
         if (!projectData) {
           console.error("❌ Project not found:", projectId);
@@ -91,7 +89,6 @@ export default function ProjectDetailsPage() {
     fetchProject();
   }, [projectId, viewingProject, setViewingProject, router]);
 
-  // Kullanıcı verilerini yükle
   useEffect(() => {
     const fetchUserData = async () => {
       if (!user) return;
@@ -115,7 +112,6 @@ export default function ProjectDetailsPage() {
     fetchUserData();
   }, [user]);
 
-  // Proje verilerini güncelle
   const updateProjectData = async (updates: Partial<Project>) => {
     if (!project) return;
 
@@ -128,7 +124,6 @@ export default function ProjectDetailsPage() {
     }
   };
 
-  // Tüm benzersiz parçaları topla
   const allParts: Part[] = useMemo(() => {
     if (!project?.parts) return [];
 
@@ -152,7 +147,6 @@ export default function ProjectDetailsPage() {
     const taskDetails: Record<string, { total: number; completed: number }> = {};
 
     project.parts.forEach(part => {
-      // Her parça için miktar kadar görev oluştur
       const partQuantity = parseInt(part.qty) || 1;
       
       Object.values(part.assemblyInstances || {}).forEach(instances => {
@@ -164,24 +158,19 @@ export default function ProjectDetailsPage() {
           Object.entries(instance.tasks).forEach(([taskName, status]) => {
             const taskStatus = status as TaskStatus;
             if (taskStatus.set) {
-              // Her parça-görev kombinasyonu için benzersiz bir anahtar oluştur
               const key = `${part.part}-${taskName}-${instance.id}`;
               
-              // Eğer bu parça-görev kombinasyonu daha önce eklenmemişse ekle
               if (!taskMap.has(key)) {
                 taskMap.set(key, { set: true, isDone: taskStatus.isDone });
                 
-                // Her görev tipi için ayrı sayaç
                 if (!taskDetails[taskName]) {
                   taskDetails[taskName] = { total: 0, completed: 0 };
                 }
-                // Parça miktarı kadar görev ekle
                 taskDetails[taskName].total += partQuantity;
                 if (taskStatus.isDone) {
                   taskDetails[taskName].completed += partQuantity;
                 }
               } else {
-                // Eğer görev daha önce eklenmişse ve tamamlanmışsa, tamamlanan sayısını artır
                 const currentStatus = taskMap.get(key)!;
                 if (taskStatus.isDone && !currentStatus.isDone) {
                   taskDetails[taskName].completed += partQuantity;
@@ -205,7 +194,6 @@ export default function ProjectDetailsPage() {
     };
   }, [project]);
 
-  // Kullanıcı istatistiklerini hesapla
   const calculateUserStats = useMemo(() => {
     if (!project) return [];
 
@@ -228,7 +216,6 @@ export default function ProjectDetailsPage() {
     return Array.from(userStats.entries()).sort((a, b) => b[1] - a[1]);
   }, [project]);
 
-  // Görev durumlarını güncelle
   const updateTaskStatus = async (
     partId: string,
     taskName: string,
@@ -244,13 +231,11 @@ export default function ProjectDetailsPage() {
         if (part.part === partId) {
           const updatedAssemblyInstances = { ...part.assemblyInstances };
           
-          // İlgili assembly'nin instance'larını güncelle
           if (updatedAssemblyInstances[assemblyId]) {
             updatedAssemblyInstances[assemblyId] = updatedAssemblyInstances[assemblyId].map(instance => {
               if (instance.id === instanceId) {
                 const currentTask = instance.tasks[taskName] as TaskStatus;
                 
-                // Eğer görev başka biri tarafından yapıldıysa ve kullanıcı admin değilse güncellemeye izin verme
                 if (currentTask?.doneBy && 
                     currentTask.doneBy !== `${userData.firstName} ${userData.lastName}` && 
                     !userData.isAdmin) {
@@ -299,7 +284,7 @@ export default function ProjectDetailsPage() {
     }
   };
 
-  // Son yapılan görevleri al
+
   const recentTasks = useMemo(() => {
     if (!viewingProject?.parts) return [];
 
@@ -310,7 +295,7 @@ export default function ProjectDetailsPage() {
       instanceId: number;
       doneBy: string;
       doneAt: string;
-      key: string; // Benzersiz tanımlayıcı
+      key: string;
     }[] = [];
 
     viewingProject.parts.forEach((part) => {
@@ -319,10 +304,8 @@ export default function ProjectDetailsPage() {
           Object.entries(instance.tasks || {}).forEach(([taskName, taskStatus]) => {
             const status = taskStatus as TaskStatus;
             if (status.isDone && status.doneBy && status.doneAt) {
-              // Benzersiz bir key oluştur
               const taskKey = `${part.part}-${taskName}-${assemblyName}-${instance.id}`;
               
-              // Eğer bu görev daha önce eklenmemişse ekle
               if (!tasks.some(t => t.key === taskKey)) {
                 tasks.push({
                   partId: part.part,
@@ -340,17 +323,14 @@ export default function ProjectDetailsPage() {
       });
     });
 
-    // Tarihe göre sırala (en yeniden en eskiye)
     return tasks.sort((a, b) => new Date(b.doneAt).getTime() - new Date(a.doneAt).getTime());
   }, [viewingProject]);
 
-  // Proje verisini gerçek zamanlı olarak dinle
   useEffect(() => {
     if (!projectId) return;
 
     const projectRef = doc(db, "projects", projectId);
     
-    // Gerçek zamanlı dinleyici
     const unsubscribe = onSnapshot(projectRef, (doc) => {
       if (doc.exists()) {
         const projectData = doc.data() as Project;
@@ -366,11 +346,9 @@ export default function ProjectDetailsPage() {
       setLoading(false);
     });
 
-    // Cleanup function
     return () => unsubscribe();
   }, [projectId, setViewingProject]);
 
-  // Not ekleme fonksiyonu
   const handleAddNote = async () => {
     if (!project || !user || !userData || !selectedPart || !noteText.trim()) return;
 
@@ -387,7 +365,7 @@ export default function ProjectDetailsPage() {
                   addedBy: `${userData.firstName} ${userData.lastName}`,
                   addedAt: new Date().toISOString(),
                   stringValue: noteText.trim(),
-                  id: Date.now().toString() // Basit bir unique id
+                  id: Date.now().toString()
                 };
 
                 return {
@@ -416,7 +394,6 @@ export default function ProjectDetailsPage() {
         parts: updatedParts,
       });
 
-      // Modal'ı kapat ve state'leri sıfırla
       setIsNoteModalOpen(false);
       setSelectedPart(null);
       setNoteText("");
@@ -426,28 +403,31 @@ export default function ProjectDetailsPage() {
     }
   };
 
-  // Not silme fonksiyonu
-  const handleDeleteNote = async (noteId: string) => {
-    if (!project || !user || !userData || !selectedPart) return;
+  const handleDeleteNote = async (noteId: string, partId: string, assemblyId: string, instanceId: number) => {
+    if (!project || !user || !userData) return;
+
+    // Admin veya not sahibi değilse silme işlemini engelle
+    const part = project.parts.find(p => p.part === partId);
+    const instance = part?.assemblyInstances?.[assemblyId]?.find(i => i.id === instanceId);
+    const note = instance?.notes?.find(n => n.id === noteId);
+    
+    if (!userData.isAdmin && note?.addedBy !== `${userData.firstName} ${userData.lastName}`) {
+      console.error("Not silme yetkiniz yok");
+      return;
+    }
 
     try {
       const projectRef = doc(db, "projects", project.id);
       const updatedParts = project.parts.map((part) => {
-        if (part.part === selectedPart.partId) {
+        if (part.part === partId) {
           const updatedAssemblyInstances = { ...part.assemblyInstances };
           
-          if (updatedAssemblyInstances[selectedPart.assemblyId]) {
-            updatedAssemblyInstances[selectedPart.assemblyId] = updatedAssemblyInstances[selectedPart.assemblyId].map(instance => {
-              if (instance.id === selectedPart.instanceId) {
+          if (updatedAssemblyInstances[assemblyId]) {
+            updatedAssemblyInstances[assemblyId] = updatedAssemblyInstances[assemblyId].map(instance => {
+              if (instance.id === instanceId) {
                 return {
                   ...instance,
-                  notes: (instance.notes || []).filter((note: Note) => {
-                    // Admin tüm notları silebilir, normal kullanıcı sadece kendi notlarını silebilir
-                    return note.id !== noteId && (
-                      userData.isAdmin || 
-                      note.addedBy === `${userData.firstName} ${userData.lastName}`
-                    );
-                  })
+                  notes: (instance.notes || []).filter((note: Note) => note.id !== noteId)
                 };
               }
               return instance;
@@ -475,9 +455,18 @@ export default function ProjectDetailsPage() {
     }
   };
 
-  // Not güncelleme fonksiyonu
   const handleUpdateNote = async () => {
     if (!project || !user || !userData || !selectedPart || !editingNote || !noteText.trim()) return;
+
+    // Admin veya not sahibi değilse düzenleme işlemini engelle
+    const part = project.parts.find(p => p.part === selectedPart.partId);
+    const instance = part?.assemblyInstances?.[selectedPart.assemblyId]?.find(i => i.id === selectedPart.instanceId);
+    const note = instance?.notes?.find(n => n.id === editingNote.id);
+    
+    if (!userData.isAdmin && note?.addedBy !== `${userData.firstName} ${userData.lastName}`) {
+      console.error("Not düzenleme yetkiniz yok");
+      return;
+    }
 
     try {
       const projectRef = doc(db, "projects", project.id);
@@ -495,7 +484,7 @@ export default function ProjectDetailsPage() {
                       return {
                         ...note,
                         stringValue: noteText.trim(),
-                        addedAt: new Date().toISOString() // Güncelleme zamanını da güncelle
+                        addedAt: new Date().toISOString()
                       };
                     }
                     return note;
@@ -523,11 +512,8 @@ export default function ProjectDetailsPage() {
         parts: updatedParts,
       });
 
-      // Modal'ı kapat ve state'leri sıfırla
-      setIsNoteModalOpen(false);
-      setSelectedPart(null);
-      setNoteText("");
       setEditingNote(null);
+      setNoteText("");
     } catch (error) {
       console.error("Error updating note:", error);
     }
@@ -1044,50 +1030,37 @@ export default function ProjectDetailsPage() {
                       {instance.notes && instance.notes.length > 0 && (
                         <div className="space-y-2">
                           {instance.notes.map((note: Note) => (
-                            <div key={note.id} className="bg-gray-50 rounded-lg p-3">
+                            <div key={note.id} className="bg-gray-50 p-3 rounded-lg mb-2">
                               <div className="flex justify-between items-start">
                                 <div className="flex-1">
-                                  <p className="text-sm text-gray-800">{note.stringValue}</p>
-                                  <div className="flex items-center gap-2 mt-1">
-                                    <span className="text-xs text-gray-500">{note.addedBy}</span>
-                                    <span className="text-xs text-gray-400">•</span>
-                                    <span className="text-xs text-gray-500">
-                                      {new Date(note.addedAt).toLocaleDateString('tr-TR', {
-                                        day: '2-digit',
-                                        month: '2-digit',
-                                        year: '2-digit',
-                                        hour: '2-digit',
-                                        minute: '2-digit'
-                                      })}
-                                    </span>
+                                  <p className="text-sm text-gray-700">{note.stringValue}</p>
+                                  <div className="mt-1 text-xs text-gray-500">
+                                    <span>{note.addedBy}</span>
+                                    <span className="mx-2">•</span>
+                                    <span>{new Date(note.addedAt).toLocaleString('tr-TR')}</span>
                                   </div>
                                 </div>
                                 {(userData?.isAdmin || note.addedBy === `${userData?.firstName} ${userData?.lastName}`) && (
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex gap-2 ml-2">
                                     <button
                                       onClick={() => {
+                                        setEditingNote(note);
+                                        setNoteText(note.stringValue);
                                         setSelectedPart({
                                           partId: part.part,
                                           assemblyId: instance.assemblyId,
                                           instanceId: instance.instanceNumber
                                         });
-                                        setEditingNote(note);
-                                        setNoteText(note.stringValue);
-                                        setIsNoteModalOpen(true);
                                       }}
-                                      className="text-gray-500 hover:text-blue-600"
+                                      className="text-blue-600 hover:text-blue-800"
                                     >
-                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                      </svg>
+                                      Düzenle
                                     </button>
                                     <button
-                                      onClick={() => handleDeleteNote(note.id!)}
-                                      className="text-gray-500 hover:text-red-600"
+                                      onClick={() => note.id && handleDeleteNote(note.id, part.part, instance.assemblyId, instance.instanceNumber)}
+                                      className="text-red-600 hover:text-red-800"
                                     >
-                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                      </svg>
+                                      Sil
                                     </button>
                                   </div>
                                 )}

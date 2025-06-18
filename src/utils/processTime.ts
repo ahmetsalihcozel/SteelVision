@@ -7,7 +7,7 @@ export const calculateManDays = (processTime: ProcessTime): number => {
   let currentWorkerCount = 0;
   let lastDate: Date | null = null;
 
-  // Tarihe göre sırala
+
   const sortedChanges = [...processTime.statusChanges].sort(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
   );
@@ -15,7 +15,7 @@ export const calculateManDays = (processTime: ProcessTime): number => {
   for (const change of sortedChanges) {
     const currentDate = new Date(change.date);
 
-    // Eğer önceki tarih varsa, aradaki günleri hesapla
+
     if (lastDate && currentWorkerCount > 0) {
       const daysDiff = Math.ceil(
         (currentDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24)
@@ -23,7 +23,7 @@ export const calculateManDays = (processTime: ProcessTime): number => {
       totalManDays += daysDiff * currentWorkerCount;
     }
 
-    // Worker count'u güncelle
+
     if (change.type === 'start' || change.type === 'continue') {
       currentWorkerCount = change.workerCount || 0;
     } else if (change.type === 'suspend' || change.type === 'finish') {
@@ -33,7 +33,7 @@ export const calculateManDays = (processTime: ProcessTime): number => {
     lastDate = currentDate;
   }
 
-  // Eğer proje hala devam ediyorsa, bugüne kadar olan günleri ekle
+
   if (lastDate && currentWorkerCount > 0) {
     const today = new Date();
     const daysDiff = Math.ceil(

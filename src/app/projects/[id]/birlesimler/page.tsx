@@ -4,7 +4,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useXsrStore } from "@/stores/xsrStore";
 import Link from "next/link";
-import PartFilter from "@/components/PartFilter";
 
 export default function BirlesimlerPage() {
   const router = useRouter();

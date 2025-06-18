@@ -8,7 +8,7 @@ import Footer from "@/components/templates/Footer";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "ProcessVision",
+  title: "SteelVision",
   description: "Üretim süreçlerinizi dijitalleştirin",
 };
 

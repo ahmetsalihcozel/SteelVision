@@ -35,10 +35,8 @@ export default function AssemblyDetailPage() {
   const [project, setProject] = useState<Project | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  // URL'deki "-" karakterini "/" ile değiştir
   const originalAssemblyId = assemblyIdStr?.replace(/-/g, "/") || "";
 
-  // Kullanıcı verilerini yükle
   useEffect(() => {
     const fetchUserData = async () => {
       if (!user) return;
@@ -62,7 +60,6 @@ export default function AssemblyDetailPage() {
     fetchUserData();
   }, [user]);
 
-  // Site URL'ini yükle
   useEffect(() => {
     const loadSiteUrl = async () => {
       try {
@@ -75,13 +72,11 @@ export default function AssemblyDetailPage() {
     loadSiteUrl();
   }, []);
 
-  // Proje verisini yükle
   useEffect(() => {
     const fetchProjectData = async () => {
       if (!projectId) return;
 
       try {
-        // Eğer store'da proje yoksa, fetch et
         if (!viewingProject) {
           const projectData = await getProject(projectId);
           if (projectData) {
@@ -105,7 +100,6 @@ export default function AssemblyDetailPage() {
 
     fetchProjectData();
 
-    // Real-time updates için listener
     if (!projectId) return;
     const projectRef = doc(db, "projects", projectId);
     const unsubscribe = onSnapshot(projectRef, (doc) => {
@@ -121,7 +115,6 @@ export default function AssemblyDetailPage() {
     return () => unsubscribe();
   }, [projectId, viewingProject, setViewingProject, userData]);
 
-  // PDF yükleme işlemi için hata yönetimi
   useEffect(() => {
     if (!viewingProject?.id || !assemblyIdStr) {
       return;
@@ -130,10 +123,10 @@ export default function AssemblyDetailPage() {
     const loadPdf = async () => {
       try {
         const cleanedName = originalAssemblyId
-          .replace(/\s*-\s*/g, "") // Boşluk ve tire işaretlerini kaldır
-          .replace(/\s+/g, "") // Tüm boşlukları kaldır
-          .replace(/\//g, "") // "/" karakterini kaldır
-          .replace(/_/g, ""); // "_" karakterini kaldır
+          .replace(/\s*-\s*/g, "")
+          .replace(/\s+/g, "")
+          .replace(/\//g, "")
+          .replace(/_/g, "");
 
         const path = `projects/${viewingProject.id}/Birlesimler/${cleanedName}.pdf`;        
         const fileRef = ref(storage, path);
@@ -148,13 +141,10 @@ export default function AssemblyDetailPage() {
     loadPdf();
   }, [assemblyIdStr, viewingProject?.id, originalAssemblyId]);
 
-  // QR kod URL'sini oluştur
   const qrCodeUrl = `${siteUrl}/projects/${projectId}/assemblyDetail/${assemblyIdStr}`;
 
-  // Assembly verilerini al
   const assembly = viewingProject?.assemblies[originalAssemblyId] as Assembly | undefined;
   
-  // Assembly parçalarını projedeki parçalarla eşleştir
   const parts = assembly?.parts.map(assemblyPart => {
     const projectPart = viewingProject?.parts.find(p => p.part === assemblyPart.part);
     return {
@@ -180,11 +170,9 @@ export default function AssemblyDetailPage() {
       const projectRef = doc(db, "projects", viewingProject.id);
       const updatedParts = viewingProject.parts.map((p) => {
         if (p.part === part.part) {
-          // Assembly instances'ı güncelle
           const updatedInstances = p.assemblyInstances?.[originalAssemblyId]?.map(instance => {
             if (instance.id === instanceId) {
               const currentTask = instance.tasks[taskName] as TaskStatus;
-              // Eğer görev başka biri tarafından yapıldıysa ve kullanıcı admin değilse güncellemeye izin verme
               if (currentTask?.doneBy && currentTask.doneBy !== `${userData.firstName} ${userData.lastName}` && !userData.isAdmin) {
                 return instance;
               }
@@ -195,10 +183,7 @@ export default function AssemblyDetailPage() {
                 ...(status.isDone ? {
                   doneBy: `${userData.firstName} ${userData.lastName}`,
                   doneAt: new Date().toISOString()
-                } : {
-                  doneBy: undefined,
-                  doneAt: undefined
-                })
+                } : {})
               };
 
               return {
@@ -362,8 +347,8 @@ export default function AssemblyDetailPage() {
           <div className="flex justify-between items-start mb-6">
             <div>
               <h2 className="text-xl font-bold text-gray-900 mb-2">{assemblyIdStr}</h2>
-              <p className="text-gray-600">Miktar: {assembly?.qty}</p>
-              <p className="text-gray-600">Ağırlık: {assembly?.weight_kg} kg</p>
+              <p className="text-gray-800">Miktar: {assembly?.qty}</p>
+              <p className="text-gray-800">Ağırlık: {assembly?.weight_kg} kg</p>
             </div>
             <div className="bg-white p-2 rounded">
               <div ref={qrRef}>
@@ -379,7 +364,7 @@ export default function AssemblyDetailPage() {
           </div>
 
           <div className="mt-8">
-            <h2 className="text-xl font-semibold mb-4">Birleşimler</h2>
+            <h2 className="text-xl text-gray-900 font-semibold mb-4">Birleşimler</h2>
             <div className="space-y-8">
               {parts.map((part) => (
                 <div key={`${part.part}-${originalAssemblyId}`} 
@@ -404,7 +389,7 @@ export default function AssemblyDetailPage() {
                   </div>
 
                   <div className="mt-3">
-                    <h4 className="font-medium mb-2">Görevler:</h4>
+                    <h4 className="font-medium text-gray-900 mb-2">Görevler:</h4>
                     <div className="grid grid-cols-1 gap-4">
                       {part.assemblyInstances?.[originalAssemblyId]?.map((instance) => {
                         const hasTasks = Object.entries(instance.tasks as Record<string, TaskStatus>)
@@ -414,8 +399,8 @@ export default function AssemblyDetailPage() {
                         return (
                           <div key={`${part.part}-${instance.id}-${originalAssemblyId}`} 
                                className="rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-shadow duration-200">
-                            {hasTasks && <h5 className="font-medium mb-2">Birleşim #{instance.id}</h5>}
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                            {hasTasks && <h5 className="font-medium text-gray-900 mb-2">Birleşim #{instance.id}</h5>}
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-2">
                               {hasTasks ? (
                                 Object.entries(instance.tasks as Record<string, TaskStatus>)
                                   .filter(([_, taskStatus]) => taskStatus.set)
@@ -440,7 +425,7 @@ export default function AssemblyDetailPage() {
                                         }}
                                       >
                                         <div className="flex items-center justify-between">
-                                          <span className="text-sm">{task}</span>
+                                          <span className="text-sm text-gray-900">{task}</span>
                                           <div className="flex items-center gap-2">
                                             <input
                                               type="checkbox"
@@ -455,7 +440,7 @@ export default function AssemblyDetailPage() {
                                               className={`w-4 h-4 ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                                               onClick={(e) => e.stopPropagation()}
                                             />
-                                            <span className="text-sm">
+                                            <span className="text-sm text-gray-900">
                                               {isChecked ? "✓" : "⏳"}
                                             </span>
                                           </div>
@@ -482,7 +467,7 @@ export default function AssemblyDetailPage() {
                                     );
                                   })
                               ) : (
-                                <div className="col-span-full text-center text-gray-500 py-4">
+                                <div className="col-span-full text-center text-gray-700 py-4">
                                   Bu parça için görev bulunmamaktadır.
                                 </div>
                               )}
@@ -530,7 +515,7 @@ export default function AssemblyDetailPage() {
           </div>
         ) : (
           <div className="mt-8 bg-yellow-50 border border-yellow-200 rounded p-4">
-            <p className="text-yellow-700">
+            <p className="text-yellow-800">
               Bu birleşim için PDF dosyası bulunamadı. Lütfen dosyanın "Birlesimler" klasöründe olduğundan emin olun.
             </p>
           </div>
@@ -542,12 +527,12 @@ export default function AssemblyDetailPage() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Parça</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Profil</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kalite</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Uzunluk (mm)</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Adet</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ağırlık (kg)</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider">Parça</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider">Profil</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider">Kalite</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider">Uzunluk (mm)</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider">Adet</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider">Ağırlık (kg)</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -556,16 +541,16 @@ export default function AssemblyDetailPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       <Link
                         href={`/projects/${projectId}/partDetail/${part.part}`}
-                        className="text-blue-600 hover:underline"
+                        className="text-blue-600 hover:text-blue-800"
                       >
                         {part.part}
                       </Link>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{part.profile}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{part.grade}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{part.length_mm}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{part.qty}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{part.weight_kg}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{part.profile}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{part.grade}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{part.length_mm}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{part.qty}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{part.weight_kg}</td>
                   </tr>
                 ))}
               </tbody>

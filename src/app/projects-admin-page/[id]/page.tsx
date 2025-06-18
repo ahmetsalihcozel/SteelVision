@@ -140,20 +140,16 @@ export default function ProjectDetailPage() {
         if (docSnap.exists()) {
           const data = docSnap.data();
 
-          // Default tasks tanımla
-          const defaultTasks = {
-            "Tedarik": { set: false, isDone: false },
-            "Ölçü Kontrol": { set: false, isDone: false },
-            "Malzemenin Temizligi": { set: false, isDone: false },
-            "Kumlama": { set: false, isDone: false },
-            "Birleştirme": { set: false, isDone: false },
-            "Kaynak Temizligi": { set: false, isDone: false },
-            "Astar": { set: false, isDone: false },
-            "Boyama": { set: false, isDone: false },
-            "Deliklerin Delinmesi": { set: false, isDone: false },
-            "Deliklere Diş Açılması": { set: false, isDone: false },
-            "Deliklere Havşa Uygulanması": { set: false, isDone: false },
-          };
+          // Tasks'ları Firestore'dan çek
+          const tasksDocRef = doc(db, "configurations", "Pe1vgl6aRhjs4Zp4CqfZ");
+          const tasksDocSnap = await getDoc(tasksDocRef);
+          const tasksArray = tasksDocSnap.data()?.tasks || [];
+
+          // Her task için obje oluştur
+          const defaultTasks = tasksArray.reduce((acc: Record<string, TaskStatus>, task: string) => {
+            acc[task] = { set: false, isDone: false };
+            return acc;
+          }, {});
 
           // Parts'ları işle ve assembly instances'ları oluştur
           const processedParts = (data.parts || []).map((part: Part) => {
@@ -262,32 +258,26 @@ export default function ProjectDetailPage() {
   };
 
   // Görev key'lerini belirle
-  const taskKeys = useMemo(() => {
-    
-    if (!allParts.length) {
-      return [];
-    }
-    
-    const allTasks = new Set<string>();
-    
-    allParts.forEach((part) => {
-      // Her assembly için instance'ları kontrol et
-      Object.values(part.assemblyInstances || {}).forEach(instances => {
-        if (!instances) return;
-        
-        instances.forEach(instance => {
-          if (!instance?.tasks) return;
-          
-          Object.keys(instance.tasks).forEach(task => {
-            allTasks.add(task);
-          });
-        });
-      });
-    });
+  const [taskKeys, setTaskKeys] = useState<string[]>([]);
 
-    const tasks = Array.from(allTasks);
-    return tasks;
-  }, [allParts]);
+  useEffect(() => {
+    const fetchTasks = async () => {
+      if (!viewingProject) return;
+      
+      try {
+        // Firestore'dan tasks'ları çek
+        const tasksDocRef = doc(db, "configurations", "Pe1vgl6aRhjs4Zp4CqfZ");
+        const tasksDocSnap = await getDoc(tasksDocRef);
+        const tasksArray = tasksDocSnap.data()?.tasks || [];
+        setTaskKeys(tasksArray);
+      } catch (error) {
+        console.error("Error fetching tasks:", error);
+        setTaskKeys([]);
+      }
+    };
+
+    fetchTasks();
+  }, [viewingProject]);
 
   const toggleTask = (task: string) => {
     setSelectedTasks((prev) =>
@@ -543,17 +533,36 @@ export default function ProjectDetailPage() {
       <div className="mb-4 bg-white p-4 sm:p-6 rounded-xl shadow-lg">
         <p className="font-semibold mb-4 text-gray-800">Görevler:</p>
         <div className="flex flex-wrap gap-2 sm:gap-4">
-          {taskKeys.map((task) => (
-            <label key={task} className="flex items-center gap-2 bg-gray-50 px-3 sm:px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors duration-200 text-sm sm:text-base">
-              <input
-                type="checkbox"
-                checked={selectedTasks.includes(task)}
-                onChange={() => toggleTask(task)}
-                className="w-4 h-4 sm:w-5 sm:h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-              />
-              <span className="text-gray-700">{task}</span>
-            </label>
-          ))}
+          {taskKeys.map((task: string) => {
+            // Bu task'ın herhangi bir parçada atanıp atanmadığını kontrol et
+            const isTaskAssigned = viewingProject.parts.some(part => 
+              Object.values(part.assemblyInstances || {}).some(instances =>
+                instances.some(instance =>
+                  (instance.tasks?.[task] as TaskStatus)?.set
+                )
+              )
+            );
+
+            return (
+              <label 
+                key={task} 
+                className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors duration-200 text-sm sm:text-base ${
+                  isTaskAssigned ? 'bg-blue-50' : 'bg-gray-50'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedTasks.includes(task)}
+                  onChange={() => toggleTask(task)}
+                  className="w-4 h-4 sm:w-5 sm:h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                />
+                <span className="text-gray-700">{task}</span>
+                {isTaskAssigned && (
+                  <span className="text-xs text-blue-600">(Atanmış)</span>
+                )}
+              </label>
+            );
+          })}
         </div>
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-6">
           <button

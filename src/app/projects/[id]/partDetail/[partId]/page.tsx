@@ -41,7 +41,6 @@ export default function PartDetailPage() {
 
   }, [viewingProject, partIdStr]);
 
-  // Parçanın bulunduğu birleşimleri ve toplam adedini hesapla
   const assembliesWithPart = React.useMemo(() => {
     if (!viewingProject?.assemblies || !partIdStr) return [];
 
@@ -60,7 +59,6 @@ export default function PartDetailPage() {
       });
   }, [viewingProject, partIdStr]);
 
-  // Toplam adedi hesapla
   const totalQuantity = useMemo(() => {
     return assembliesWithPart.reduce((total, assembly) => total + parseInt(assembly.qty), 0);
   }, [assembliesWithPart]);
@@ -70,7 +68,6 @@ export default function PartDetailPage() {
       if (!projectId) return;
 
       try {
-        // Eğer store'da proje yoksa, fetch et
         if (!viewingProject) {
           const projectData = await getProject(projectId);
           if (projectData) {
@@ -94,7 +91,6 @@ export default function PartDetailPage() {
 
     fetchProjectData();
 
-    // Real-time updates için listener
     if (!projectId) return;
     const projectRef = doc(db, "projects", projectId);
     const unsubscribe = onSnapshot(projectRef, (doc) => {
@@ -110,7 +106,6 @@ export default function PartDetailPage() {
     return () => unsubscribe();
   }, [projectId, viewingProject, setViewingProject, userData]);
 
-  // Kullanıcı verilerini yükle
   useEffect(() => {
     const fetchUserData = async () => {
       if (!user) return;
@@ -120,7 +115,6 @@ export default function PartDetailPage() {
         const userDocSnap = await getDoc(userDocRef);
         if (userDocSnap.exists()) {
           const data = userDocSnap.data();
-          // User data is already handled by AuthProvider
         }
       } catch (error) {
         console.error("Kullanıcı verileri yüklenirken hata:", error);
@@ -155,7 +149,6 @@ export default function PartDetailPage() {
     console.log(viewingProject)
 
   },[])
-  // Site URL'ini yükle
   useEffect(() => {
     const loadSiteUrl = async () => {
       try {
@@ -168,7 +161,6 @@ export default function PartDetailPage() {
     loadSiteUrl();
   }, []);
 
-  // QR kod URL'sini oluştur
   const qrCodeUrl = `${siteUrl}/projects/${viewingProject?.id}/partDetail/${partId}`;
 
   const handlePrint = () => {
@@ -246,7 +238,6 @@ export default function PartDetailPage() {
     printWindow.print();
   };
 
-  // Parçanın bulunduğu assembly'leri ve instance'ları al
   const assemblyInstances = useMemo(() => {
     if (!part || !project || !viewingProject) {
       console.log("❌ Part, project or viewingProject is missing:", { part, project, viewingProject });
@@ -257,7 +248,6 @@ export default function PartDetailPage() {
     const currentPart = viewingProject.parts.find(p => p.part === partIdStr);
     console.log("🔍 Current part in viewingProject:", currentPart);
 
-    // Tüm assembly'leri kontrol et ve parçanın bulunduğu assembly'leri bul
     const assembliesWithPart = Object.entries(viewingProject.assemblies)
       .filter(([_, assembly]) => assembly.parts.some(p => p.part === partIdStr))
       .map(([assemblyName, assembly]) => {
@@ -270,7 +260,6 @@ export default function PartDetailPage() {
           assemblyQty
         });
 
-        // Assembly miktarı kadar instance oluştur
         const instances = Array.from({ length: assemblyQty }, (_, index) => {
           const instanceId = index + 1;
           const currentInstance = currentInstances.find(i => i.id === instanceId);
@@ -296,7 +285,6 @@ export default function PartDetailPage() {
     return assembliesWithPart;
   }, [part, project, viewingProject, partIdStr]);
 
-  // Görev durumunu güncelle
   const updateTaskStatus = async (
     assemblyName: string,
     instanceId: number,
@@ -314,7 +302,6 @@ export default function PartDetailPage() {
           const updatedInstances = p.assemblyInstances?.[assemblyName]?.map(instance => {
             if (instance.id === instanceId) {
               const currentTask = instance.tasks[taskName] as TaskStatus;
-              // Eğer görev başka biri tarafından yapıldıysa ve kullanıcı admin değilse güncellemeye izin verme
               if (currentTask?.doneBy && currentTask.doneBy !== `${userData.firstName} ${userData.lastName}` && !userData.isAdmin) {
                 return instance;
               }
@@ -325,10 +312,7 @@ export default function PartDetailPage() {
                 ...(status.isDone ? {
                   doneBy: `${userData.firstName} ${userData.lastName}`,
                   doneAt: new Date().toISOString()
-                } : {
-                  doneBy: undefined,
-                  doneAt: undefined
-                })
+                } : {})
               };
 
               return {
@@ -368,7 +352,6 @@ export default function PartDetailPage() {
 
   const handleEditTask = (task: string, partId: string) => {
     setEditingTask({ task, partId });
-    // Mevcut değerleri al
     const part = viewingProject?.parts.find(p => p.part === partId);
     if (part) {
       const taskStatus = part.assemblyInstances?.[projectId || ""]?.[0]?.tasks?.[task];
@@ -389,14 +372,12 @@ export default function PartDetailPage() {
       const { task } = editingTask;
       console.log("Starting task update for:", { task, partIdStr });
 
-      // Önce parçayı bul
       const part = viewingProject.parts.find(p => p.part === partIdStr);
       if (!part) {
         console.log("Part not found:", partIdStr);
         return;
       }
 
-      // Assembly'leri kontrol et
       let foundAssembly = null;
       let foundInstance = null;
 
@@ -418,11 +399,9 @@ export default function PartDetailPage() {
 
       console.log("Found assembly and instance:", { foundAssembly, foundInstance });
 
-      // Mevcut task durumunu al
       const currentTask = foundInstance.tasks[task];
       console.log("Current task status:", currentTask);
 
-      // Yeni durumu oluştur
       const updatedStatus: TaskStatus = {
         ...currentTask,
         set: true,
@@ -433,7 +412,6 @@ export default function PartDetailPage() {
 
       console.log("Updating task with status:", updatedStatus);
 
-      // Firestore'u güncelle
       const projectRef = doc(db, "projects", projectId || "");
       const updatedParts = viewingProject.parts.map((p) => {
         if (p.part === partIdStr) {
@@ -465,7 +443,6 @@ export default function PartDetailPage() {
         parts: updatedParts,
       });
 
-      // Local state'i güncelle
       setViewingProject({
         ...viewingProject,
         parts: updatedParts,
@@ -635,14 +612,15 @@ export default function PartDetailPage() {
             return (
               <div key={assemblyName} className="bg-white rounded-xl shadow-lg p-6">
                 <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-bold text-gray-900">
+                  <div className="flex flex-col">
                     <Link 
                       href={`/projects/${viewingProject?.id}/assemblyDetail/${assemblyName.replace(/\//g, "-")}`}
-                      className="text-blue-600 hover:underline"
+                      className="text-blue-600 hover:underline text-xl font-bold"
                     >
-                      {assemblyName}
+                      {`${assemblyName} `}
                     </Link>
-                  </h2>
+                    <p className="text-md">içinde {partId} görevleri:</p>
+                  </div>
                   <span className="text-sm text-gray-600">
                     {instances.length} Örnek
                   </span>
@@ -665,7 +643,7 @@ export default function PartDetailPage() {
                       <div key={`${assemblyName}-${instance.id}`} className="rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-shadow duration-200">
                         <h3 className="font-semibold mb-2">Birleşim #{instance.id}</h3>
                         {hasTasks ? (
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                             {Object.entries(instance.tasks as Record<string, TaskStatus>)
                               .filter(([_, taskStatus]) => taskStatus.set)
                               .map(([task, taskStatus]) => {

@@ -47,7 +47,6 @@ function ProjectsPage() {
             try {
               coverUrl = await getDownloadURL(ref(storage, `projects/${docSnap.id}/cover.png`));
             } catch {
-              // görsel yoksa geç
             }
 
             return {
