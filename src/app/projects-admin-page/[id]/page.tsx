@@ -4,7 +4,7 @@ import { useMemo, useState, useEffect, useRef } from "react";
 import { useXsrStore } from "@/stores/xsrStore";
 import { Part, Project, TaskStatus, AssemblyInstance, Assembly } from "@/types/types";
 import { db } from "@/api/firebase";
-import { doc, getDoc, updateDoc, writeBatch } from "firebase/firestore";
+import { doc, getDoc, updateDoc, writeBatch, collection, getDocs } from "firebase/firestore";
 import { useParams } from "next/navigation";
 import { QRCodeSVG } from 'qrcode.react';
 import { useReactToPrint } from 'react-to-print';
@@ -101,6 +101,11 @@ export default function ProjectDetailPage() {
   const [printData, setPrintData] = useState<{ qrCodes: { id: string; url: string }[], type: 'assembly' | 'part' } | null>(null);
   const [printUniqueOnly, setPrintUniqueOnly] = useState(true);
   
+  // Kullanıcı seçimi için state'ler
+  const [showUserSelect, setShowUserSelect] = useState(false);
+  const [selectedUser, setSelectedUser] = useState("");
+  const [users, setUsers] = useState<Array<{id: string, firstName: string, lastName: string}>>([]);
+  
   // Filtreleme state'leri
   const [filters, setFilters] = useState({
     partName: '',
@@ -126,6 +131,25 @@ export default function ProjectDetailPage() {
       }
     `,
   });
+
+  // Kullanıcıları getir
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const usersCollection = collection(db, "users");
+        const usersSnapshot = await getDocs(usersCollection);
+        const usersList = usersSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        } as {id: string, firstName: string, lastName: string}));
+        setUsers(usersList);
+      } catch (error) {
+        console.error("Kullanıcılar yüklenirken hata:", error);
+      }
+    };
+
+    fetchUsers();
+  }, []);
 
   // Proje verisini yükle
   useEffect(() => {
@@ -401,6 +425,64 @@ export default function ProjectDetailPage() {
     }
   };
 
+  const handleMarkAsDone = async () => {
+    if (!viewingProject?.id || !projectId) return;
+    
+    // Kullanıcı adını al
+    const userName = showUserSelect && selectedUser ? selectedUser : "Admin";
+    
+    try {
+      const projectRef = doc(db, "projects", projectId);
+      const updatedParts = (viewingProject.parts || []).map((part) => {
+        if (selectedParts.has(part.part)) {
+          // Her assembly için instance'ları güncelle
+          const updatedAssemblyInstances: Record<string, AssemblyInstance[]> = {};
+          Object.entries(part.assemblyInstances || {}).forEach(([assemblyId, instances]) => {
+            updatedAssemblyInstances[assemblyId] = instances.map(instance => {
+              // Seçili görevleri isDone:true yap
+              const updatedTasks = { ...instance.tasks };
+              selectedTasks.forEach(task => {
+                if (updatedTasks[task] && updatedTasks[task].set) {
+                  updatedTasks[task] = { 
+                    ...updatedTasks[task], 
+                    isDone: true,
+                    doneBy: userName,
+                    doneAt: new Date().toISOString()
+                  };
+                }
+              });
+              return {
+                ...instance,
+                tasks: updatedTasks
+              };
+            });
+          });
+          return {
+            ...part,
+            assemblyInstances: updatedAssemblyInstances
+          };
+        }
+        return part;
+      });
+      await updateDoc(projectRef, {
+        parts: updatedParts
+      });
+      // Store'u güncelle
+      setViewingProject({
+        ...viewingProject,
+        parts: updatedParts,
+      });
+      setSelectedParts(new Set());
+      setSelectedTasks([]);
+      setShowUserSelect(false);
+      setSelectedUser("");
+      alert("Seçili görevler başarıyla yapıldı olarak işaretlendi.");
+    } catch (error) {
+      console.error("Error marking tasks as done:", error);
+      alert("Görevler işaretlenirken bir hata oluştu.");
+    }
+  };
+
   // Görev istatistiklerini hesapla
   const taskStats = useMemo(() => {
     if (!viewingProject?.parts) return { total: 0, completed: 0 };
@@ -564,21 +646,61 @@ export default function ProjectDetailPage() {
             );
           })}
         </div>
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-6">
-          <button
-            onClick={handleAssign}
-            disabled={selectedParts.size === 0 || selectedTasks.length === 0}
-            className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-2.5 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Seçili Görevleri Ata
-          </button>
-          <button
-            onClick={handleUnassign}
-            disabled={selectedParts.size === 0 || selectedTasks.length === 0}
-            className="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white px-4 sm:px-6 py-2.5 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Seçili Görevleri İptal Et
-          </button>
+        <div className="flex flex-col gap-4 mt-6">
+          {/* Kullanıcı seçimi */}
+          <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={showUserSelect}
+                onChange={(e) => setShowUserSelect(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="text-sm font-medium text-gray-700">
+                Başka kullanıcı adına işaretle
+              </span>
+            </label>
+            
+            {showUserSelect && (
+              <select
+                value={selectedUser}
+                onChange={(e) => setSelectedUser(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              >
+                <option value="">Kullanıcı seçin...</option>
+                {users.map((user) => (
+                  <option key={user.id} value={`${user.firstName} ${user.lastName}`}>
+                    {user.firstName} {user.lastName}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {/* Butonlar */}
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+            <button
+              onClick={handleAssign}
+              disabled={selectedParts.size === 0 || selectedTasks.length === 0}
+              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-2.5 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Seçili Görevleri Ata
+            </button>
+            <button
+              onClick={handleUnassign}
+              disabled={selectedParts.size === 0 || selectedTasks.length === 0}
+              className="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white px-4 sm:px-6 py-2.5 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Seçili Görevleri İptal Et
+            </button>
+            <button
+              onClick={handleMarkAsDone}
+              disabled={selectedParts.size === 0 || selectedTasks.length === 0 || (showUserSelect && !selectedUser)}
+              className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white px-4 sm:px-6 py-2.5 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Seçili Görevleri Yapıldı Olarak İşaretle
+            </button>
+          </div>
         </div>
       </div>
 

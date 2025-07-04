@@ -127,12 +127,25 @@ export default function PartDetailPage() {
   useEffect(() => {
     if (!viewingProject?.id || !partIdStr) return;
 
-    const cleanedName = partIdStr
-      .replace(/\s*-\s*/g, "")
+    // Dosya adını temizleme fonksiyonu
+    const cleanFileName = (fileName: string) => {
+      // PDF uzantısını geçici olarak kaldır
+      const nameWithoutExt = fileName.replace(/\.pdf$/i, '');
+      
+      // "-" karakterinden sonra gelen tüm metni kaldır (STANDARD, BRACE, vb.)
+      const cleanedName = nameWithoutExt.replace(/\s*-\s*[^-]*$/, '');
+      
+      // PDF uzantısını geri ekle
+      return cleanedName + '.pdf';
+    };
+
+    const cleanedName = cleanFileName(partIdStr + '.pdf')
+      .replace(/\.pdf$/i, '') // PDF uzantısını kaldır
       .replace(/\s+/g, "")
       .replace(/\//g, "");
 
     const path = `projects/${viewingProject.id}/Parcalar/${cleanedName}.pdf`;
+    console.log(`🔍 Parça PDF aranıyor: ${path}`);
     
     const fileRef = ref(storage, path);
 

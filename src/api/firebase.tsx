@@ -105,10 +105,23 @@ export const createProject = async (
         projectData.coverImageUrl = coverImageUrl;
       }
 
+      // Dosya adını temizleme fonksiyonu
+      const cleanFileName = (fileName: string) => {
+        // PDF uzantısını geçici olarak kaldır
+        const nameWithoutExt = fileName.replace(/\.pdf$/i, '');
+        
+        // "-" karakterinden sonra gelen tüm metni kaldır (STANDARD, BRACE, vb.)
+        const cleanedName = nameWithoutExt.replace(/\s*-\s*[^-]*$/, '');
+        
+        // PDF uzantısını geri ekle
+        return cleanedName + '.pdf';
+      };
+
       if (files.parcaFiles && files.parcaFiles.length > 0) {
         const parcaUrls = await Promise.all(
           Array.from(files.parcaFiles).map(async (file) => {
-            const cleanedFileName = file.name.replace(/\s*-\s*STANDARD\.pdf$/i, ".pdf");
+            const cleanedFileName = cleanFileName(file.name);
+            console.log(`📁 Parça dosyası: "${file.name}" -> "${cleanedFileName}"`);
             const path = `projects/${projectId}/Parcalar/${cleanedFileName}`;
             const fileRef = ref(storage, path);
             await uploadBytes(fileRef, file);
@@ -121,7 +134,8 @@ export const createProject = async (
       if (files.birlesimFiles && files.birlesimFiles.length > 0) {
         const birlesimUrls = await Promise.all(
           Array.from(files.birlesimFiles).map(async (file) => {
-            const cleanedFileName = file.name.replace(/\s*-\s*STANDARD\.pdf$/i, ".pdf");
+            const cleanedFileName = cleanFileName(file.name);
+            console.log(`🏗️ Birleşim dosyası: "${file.name}" -> "${cleanedFileName}"`);
             const path = `projects/${projectId}/Birlesimler/${cleanedFileName}`;
             const fileRef = ref(storage, path);
             await uploadBytes(fileRef, file);

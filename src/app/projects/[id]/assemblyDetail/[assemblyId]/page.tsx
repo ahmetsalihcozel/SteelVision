@@ -122,13 +122,26 @@ export default function AssemblyDetailPage() {
 
     const loadPdf = async () => {
       try {
-        const cleanedName = originalAssemblyId
-          .replace(/\s*-\s*/g, "")
+        // Dosya adını temizleme fonksiyonu
+        const cleanFileName = (fileName: string) => {
+          // PDF uzantısını geçici olarak kaldır
+          const nameWithoutExt = fileName.replace(/\.pdf$/i, '');
+          
+          // "-" karakterinden sonra gelen tüm metni kaldır (STANDARD, BRACE, vb.)
+          const cleanedName = nameWithoutExt.replace(/\s*-\s*[^-]*$/, '');
+          
+          // PDF uzantısını geri ekle
+          return cleanedName + '.pdf';
+        };
+
+        const cleanedName = cleanFileName(originalAssemblyId + '.pdf')
+          .replace(/\.pdf$/i, '') // PDF uzantısını kaldır
           .replace(/\s+/g, "")
           .replace(/\//g, "")
           .replace(/_/g, "");
 
         const path = `projects/${viewingProject.id}/Birlesimler/${cleanedName}.pdf`;        
+        console.log(`🔍 Birleşim PDF aranıyor: ${path}`);
         const fileRef = ref(storage, path);
         const url = await getDownloadURL(fileRef);
         setPdfUrl(url);
