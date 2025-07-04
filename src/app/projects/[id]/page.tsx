@@ -147,8 +147,6 @@ export default function ProjectDetailsPage() {
     const taskDetails: Record<string, { total: number; completed: number }> = {};
 
     project.parts.forEach(part => {
-      const partQuantity = parseInt(part.qty) || 1;
-      
       Object.values(part.assemblyInstances || {}).forEach(instances => {
         if (!instances) return;
         
@@ -166,14 +164,15 @@ export default function ProjectDetailsPage() {
                 if (!taskDetails[taskName]) {
                   taskDetails[taskName] = { total: 0, completed: 0 };
                 }
-                taskDetails[taskName].total += partQuantity;
+                // Her instance için 1 görev sayılmalı, partQuantity ile çarpılmamalı
+                taskDetails[taskName].total += 1;
                 if (taskStatus.isDone) {
-                  taskDetails[taskName].completed += partQuantity;
+                  taskDetails[taskName].completed += 1;
                 }
               } else {
                 const currentStatus = taskMap.get(key)!;
                 if (taskStatus.isDone && !currentStatus.isDone) {
-                  taskDetails[taskName].completed += partQuantity;
+                  taskDetails[taskName].completed += 1;
                   taskMap.set(key, { set: true, isDone: true });
                 }
               }

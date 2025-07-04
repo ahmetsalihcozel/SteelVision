@@ -103,9 +103,12 @@ export default function XsrReaderAssemblies() {
       }
 
       const assemblyQty = parseInt(data[currentAssembly].qty) || 1;
+      const partQty = parseInt(parts[1]) || 1; // Parça miktarını al
+      const totalPartQty = assemblyQty * partQty; // Birleşim adedi × Parça miktarı
+      
       const partObj: Record<string, any> = {
         part: (parts[0] || "").replace(/\//g, "-"),
-        qty: assemblyQty.toString(),
+        qty: totalPartQty.toString(), // Toplam parça miktarını kullan
         profile: parts[2] || "",
         grade: "",
         length_mm: "",
@@ -137,7 +140,7 @@ export default function XsrReaderAssemblies() {
         partObj.weight_kg = parts[3];
       }
 
-      console.log(`🔧 Found part: ${partObj.part} with quantity: ${partObj.qty}`);
+      console.log(`🔧 Found part: ${partObj.part} with quantity: ${partObj.qty} (assembly: ${assemblyQty} × part: ${partQty} = ${totalPartQty})`);
 
       data[currentAssembly].parts.push(partObj);
       
@@ -152,14 +155,16 @@ export default function XsrReaderAssemblies() {
       // Parçayı Map'e ekle veya güncelle
       if (partsMap.has(mainPartObj.part)) {
         const existingPart = partsMap.get(mainPartObj.part);
-        // Sadece assembly instances'ları birleştir, miktarı değiştirme
+        // Assembly instances'ları birleştir
         existingPart.assemblyInstances = {
           ...existingPart.assemblyInstances,
           ...mainPartObj.assemblyInstances
         };
-        // Quantity'yi güncelle
-        existingPart.qty = (parseInt(existingPart.qty) + parseInt(mainPartObj.qty)).toString();
-        console.log(`🔄 Updated existing part: ${mainPartObj.part} with new quantity: ${existingPart.qty}`);
+        // Quantity'yi doğru şekilde topla (her birleşimdeki toplam parça miktarı)
+        const existingQty = parseInt(existingPart.qty) || 0;
+        const newQty = parseInt(mainPartObj.qty) || 0;
+        existingPart.qty = (existingQty + newQty).toString();
+        console.log(`🔄 Updated existing part: ${mainPartObj.part} with new quantity: ${existingPart.qty} (${existingQty} + ${newQty})`);
       } else {
         partsMap.set(mainPartObj.part, mainPartObj);
         console.log(`➕ Added new part: ${mainPartObj.part} with quantity: ${mainPartObj.qty}`);

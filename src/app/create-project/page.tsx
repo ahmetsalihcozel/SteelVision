@@ -110,14 +110,22 @@ export default function CreateProjectPage() {
             const existingPartIndex = uniqueParts.findIndex(p => p.part === part.part);
             if (existingPartIndex === -1) {
               uniqueParts.push({
-              ...part,
-              assemblyInstances: part.assemblyInstances || {}
+                ...part,
+                assemblyInstances: part.assemblyInstances || {}
               });
             } else {
+              // Mevcut parçanın qty'sini yeni parçanın qty'si ile topla
+              const existingQty = parseInt(uniqueParts[existingPartIndex].qty) || 0;
+              const newQty = parseInt(part.qty) || 0;
+              uniqueParts[existingPartIndex].qty = (existingQty + newQty).toString();
+              
+              // Assembly instances'ları birleştir
               uniqueParts[existingPartIndex].assemblyInstances = {
                 ...uniqueParts[existingPartIndex].assemblyInstances,
                 ...part.assemblyInstances
-            };
+              };
+              
+              console.log(`🔄 Merged part ${part.part}: ${existingQty} + ${newQty} = ${uniqueParts[existingPartIndex].qty}`);
             }
             return uniqueParts;
           }, []),
@@ -127,6 +135,7 @@ export default function CreateProjectPage() {
       };
 
       console.log("📦 Project data before handleCreateProject:", projectData);
+      console.log("🔍 b-29 part details:", projectData.parts.find(p => p.part === "b-29"));
 
       const result = await handleCreateProject(
         projectData,
