@@ -110,8 +110,8 @@ export default function CreateProjectPage() {
             const existingPartIndex = uniqueParts.findIndex(p => p.part === part.part);
             if (existingPartIndex === -1) {
               uniqueParts.push({
-                ...part,
-                assemblyInstances: part.assemblyInstances || {}
+              ...part,
+              assemblyInstances: part.assemblyInstances || {}
               });
             } else {
               // Mevcut parçanın qty'sini yeni parçanın qty'si ile topla
@@ -123,7 +123,7 @@ export default function CreateProjectPage() {
               uniqueParts[existingPartIndex].assemblyInstances = {
                 ...uniqueParts[existingPartIndex].assemblyInstances,
                 ...part.assemblyInstances
-              };
+            };
               
               console.log(`🔄 Merged part ${part.part}: ${existingQty} + ${newQty} = ${uniqueParts[existingPartIndex].qty}`);
             }

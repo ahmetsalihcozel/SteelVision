@@ -569,22 +569,51 @@ export default function ProjectDetailPage() {
 
     let qrCodes: { id: string; url: string }[] = [];
     if (type === 'assembly') {
+      console.log("🔍 Assembly QR kodları oluşturuluyor...");
+      console.log("📦 Mevcut assemblies:", Object.keys(viewingProject.assemblies || {}));
+      
+      // Gerçekten kullanılan assembly'leri bul
+      const usedAssemblies = new Set<string>();
+      viewingProject.parts?.forEach(part => {
+        Object.keys(part.assemblyInstances || {}).forEach(assemblyId => {
+          usedAssemblies.add(assemblyId);
+        });
+      });
+      
+      console.log("✅ Kullanılan assembly'ler:", Array.from(usedAssemblies));
+      
       Object.entries(viewingProject.assemblies || {}).forEach(([assemblyId, assembly]) => {
-        const qty = typeof assembly.qty === 'number' ? assembly.qty : 1;
-        for (let i = 0; i < qty; i++) {
-          qrCodes.push({
-            id: `${assemblyId}-${i + 1}`,
-            url: `${window.location.origin}/projects/${projectId}/assemblyDetail/${assemblyId.replace(/\//g, '-')}`
-          });
+        // Sadece gerçekten kullanılan assembly'ler için QR kod oluştur
+        if (usedAssemblies.has(assemblyId)) {
+          const qty = typeof assembly.qty === 'number' ? assembly.qty : parseInt(assembly.qty) || 1;
+          console.log(`🏗️ Assembly: ${assemblyId}, Adet: ${qty}`);
+          
+          for (let i = 0; i < qty; i++) {
+            qrCodes.push({
+              id: `${assemblyId}-${i + 1}`,
+              url: `${window.location.origin}/projects/${projectId}/assemblyDetail/${assemblyId.replace(/\//g, '-')}`
+            });
+          }
+        } else {
+          console.log(`❌ Assembly ${assemblyId} kullanılmıyor, QR kod oluşturulmayacak`);
         }
       });
+      
+      console.log(`📄 Oluşturulan QR kod sayısı: ${qrCodes.length}`);
+      console.log("📋 QR kod listesi:", qrCodes.map(qr => qr.id));
     } else {
+      console.log("🔍 Parça QR kodları oluşturuluyor...");
+      console.log("📦 Mevcut parçalar:", viewingProject.parts?.map(p => p.part) || []);
+      
       (viewingProject.parts || []).forEach(part => {
         qrCodes.push({
           id: part.part,
           url: `${window.location.origin}/projects/${projectId}/partDetail/${part.part}`
         });
       });
+      
+      console.log(`📄 Oluşturulan QR kod sayısı: ${qrCodes.length}`);
+      console.log("📋 QR kod listesi:", qrCodes.map(qr => qr.id));
     }
 
     setPrintData({ qrCodes, type });

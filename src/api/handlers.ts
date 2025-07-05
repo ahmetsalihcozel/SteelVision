@@ -268,14 +268,22 @@ export const createProject = async (projectData: Partial<Project>, files: {
 
       // Dosya adını temizleme fonksiyonu
       const cleanFileName = (fileName: string) => {
+        console.log(`🔧 Temizlenmemiş dosya adı: "${fileName}"`);
+        
         // PDF uzantısını geçici olarak kaldır
         const nameWithoutExt = fileName.replace(/\.pdf$/i, '');
+        console.log(`📝 Uzantısız ad: "${nameWithoutExt}"`);
         
         // "-" karakterinden sonra gelen tüm metni kaldır (STANDARD, BRACE, vb.)
-        const cleanedName = nameWithoutExt.replace(/\s*-\s*[^-]*$/, '');
+        // Daha kapsamlı regex: boşluklar, tire, ve sonrasındaki her şey
+        const cleanedName = nameWithoutExt.replace(/\s*-\s*[^-]*$/i, '');
+        console.log(`✨ Temizlenmiş ad: "${cleanedName}"`);
         
         // PDF uzantısını geri ekle
-        return cleanedName + '.pdf';
+        const finalName = cleanedName + '.pdf';
+        console.log(`📄 Final dosya adı: "${finalName}"`);
+        
+        return finalName;
       };
 
       // Parça dosyaları yükleme
